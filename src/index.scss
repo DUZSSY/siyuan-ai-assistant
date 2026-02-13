@@ -1,0 +1,195 @@
+// AI Assistant Plugin Styles
+
+.ai-floating-toolbar {
+  animation: toolbarFadeIn 0.2s ease-out;
+
+  &.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toolbar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--b3-border-color);
+    margin-bottom: 6px;
+
+    .provider-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--b3-theme-on-surface);
+    }
+
+    .btn-settings {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      opacity: 0.6;
+      font-size: 14px;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .toolbar-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .toolbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    background: var(--b3-theme-surface);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+
+    .icon {
+      font-size: 14px;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+      border-color: var(--b3-theme-primary);
+    }
+
+    &:disabled,
+    &.loading {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@keyframes toolbarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Context Menu
+.ai-context-menu {
+  animation: menuFadeIn 0.15s ease-out;
+
+  .ai-context-menu-item {
+    &:hover {
+      background: var(--b3-theme-hover);
+    }
+  }
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Dock panel styling
+[data-type="ai_assistant_dock"] {
+  .b3-dialog__content {
+    padding: 0;
+  }
+
+  .layout__dock__panel {
+    background: var(--b3-theme-background);
+  }
+}
+
+// Common utility classes
+.ai-hidden {
+  display: none !important;
+}
+
+.ai-flex {
+  display: flex;
+}
+
+.ai-flex-col {
+  flex-direction: column;
+}
+
+.ai-items-center {
+  align-items: center;
+}
+
+.ai-justify-center {
+  justify-content: center;
+}
+
+.ai-gap-2 {
+  gap: 8px;
+}
+
+.ai-gap-4 {
+  gap: 16px;
+}
+
+.ai-p-4 {
+  padding: 16px;
+}
+
+.ai-m-4 {
+  margin: 16px;
+}
+
+.ai-text-sm {
+  font-size: 14px;
+}
+
+.ai-text-xs {
+  font-size: 12px;
+}
+
+.ai-text-center {
+  text-align: center;
+}
+
+.ai-w-full {
+  width: 100%;
+}
+
+.ai-h-full {
+  height: 100%;
+}
+
+// Scrollbar styling
+.ai-custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--b3-border-color);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--b3-theme-on-surface);
+    }
+  }
+}

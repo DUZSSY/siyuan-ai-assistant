@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+temp/
+tmp_check*/
+temp_final/
+temp_check2/
+temp_check3/
+
+# Package zips (keep the source)
+*.zip
+!package.zip
+
+# Publish directory (only release package.zip needed)
+publish/
+
+# Backups
+backups/
+
+# Development status docs
+IMPLEMENTATION_STATUS.md
+FEATURE_SPECIFICATION.md
+RELEASE-v0.1.5.md
+
+# Temp files
+nul
