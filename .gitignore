@@ -29,16 +29,16 @@ npm-debug.log*
 *.backup
 
 # Temporary files
-*.tmp
 temp/
 tmp_check*/
 temp_final/
 temp_check2/
 temp_check3/
+temp_test/
+temp_verify/
 
-# Package zips (keep the source)
+# Package zips
 *.zip
-!package.zip
 
 # Publish directory (only release package.zip needed)
 publish/
