@@ -1,0 +1,68 @@
+{
+  "title": "AI助手",
+  "loading": "加载中...",
+  "send": "发送",
+  "cancel": "取消",
+  "save": "保存",
+  "close": "关闭",
+  "settings": "设置",
+  "providers": {
+    "title": "AI提供商",
+    "add": "添加提供商",
+    "edit": "编辑提供商",
+    "delete": "删除提供商",
+    "test": "测试连接",
+    "default": "默认",
+    "name": "名称",
+    "apiKey": "API密钥",
+    "baseURL": "API地址",
+    "model": "模型",
+    "temperature": "温度",
+    "maxTokens": "最大Token"
+  },
+  "operations": {
+    "chat": "对话",
+    "polish": "润色",
+    "translate": "翻译",
+    "summarize": "总结",
+    "expand": "扩写",
+    "condense": "精简",
+    "rewrite": "改写",
+    "continue": "续写",
+    "custom1": "自定义1",
+    "custom2": "自定义2",
+    "custom3": "自定义3"
+  },
+  "messages": {
+    "noProvider": "请先配置AI提供商",
+    "connectionSuccess": "连接成功",
+    "connectionFailed": "连接失败",
+    "processing": "处理中...",
+    "error": "处理失败，请检查配置",
+    "noSelection": "请先选择文本"
+  },
+  "diff": {
+    "title": "差异对比",
+    "original": "原文",
+    "modified": "修改后",
+    "accept": "接受",
+    "reject": "拒绝",
+    "acceptAll": "全部接受",
+    "rejectAll": "全部拒绝",
+    "apply": "应用修改",
+    "unchanged": "未变",
+    "modified": "修改"
+  },
+  "chat": {
+    "placeholder": "输入消息... (Enter发送, Shift+Enter换行)",
+    "newChat": "新对话",
+    "history": "历史记录",
+    "noHistory": "暂无历史对话",
+    "quickActions": {
+      "polish": "润色",
+      "translate": "翻译",
+      "summarize": "总结",
+      "expand": "扩写"
+    }
+  }
+}

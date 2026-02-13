@@ -167,7 +167,6 @@ export class BlockService {
                 markdown: block.markdown
             };
         } catch (error) {
-            console.error('[AI Assistant] Failed to get block content:', error);
             return null;
         }
     }
@@ -194,7 +193,6 @@ export class BlockService {
             const data = await response.json();
             return data.code === 0;
         } catch (error) {
-            console.error('[AI Assistant] Failed to update block:', error);
             return false;
         }
     }
@@ -224,7 +222,6 @@ export class BlockService {
             }
             return null;
         } catch (error) {
-            console.error('[AI Assistant] Failed to insert block:', error);
             return null;
         }
     }
@@ -278,30 +275,16 @@ export class BlockService {
                 return { success: true, content: fullContent };
             }
 
-            // 调试日志
-            console.log('[AI Assistant] ====== replaceSelectedText 调试 ======');
-            console.log('[AI Assistant] blockId:', blockId);
-            console.log('[AI Assistant] fullContent (原文):', JSON.stringify(fullContent));
-            console.log('[AI Assistant] selectedText (选中):', JSON.stringify(selectedText));
-            console.log('[AI Assistant] newText (AI结果):', JSON.stringify(newText));
-            console.log('[AI Assistant] fullContent长度:', fullContent.length);
-            console.log('[AI Assistant] selectedText长度:', selectedText.length);
-            console.log('[AI Assistant] fullContent是否包含selectedText:', fullContent.includes(selectedText));
-            
             // 策略1: 精确匹配（用户选中的文字和原文完全一致）
             let escapedSelected = selectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             let regex = new RegExp(escapedSelected, '');
             if (regex.test(fullContent)) {
                 const newContent = fullContent.replace(regex, newText);
-                console.log('[AI Assistant] 策略1-精确匹配成功');
                 return { success: true, content: newContent };
             }
-            console.log('[AI Assistant] 策略1-精确匹配失败');
 
             // 策略2: Trim后匹配（去除前后空格）
             const trimmedSelected = selectedText.trim();
-            console.log('[AI Assistant] trimmedSelected:', JSON.stringify(trimmedSelected));
-            console.log('[AI Assistant] trimmed全文是否包含trimmed选中:', fullContent.trim().includes(trimmedSelected));
             escapedSelected = trimmedSelected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             regex = new RegExp(escapedSelected, '');
             if (regex.test(fullContent)) {
@@ -309,32 +292,25 @@ export class BlockService {
                 const beforeMatch = fullContent.substring(0, fullContent.indexOf(trimmedSelected));
                 const afterMatch = fullContent.substring(fullContent.indexOf(trimmedSelected) + trimmedSelected.length);
                 const newContent = beforeMatch + newText + afterMatch;
-                console.log('[AI Assistant] 策略2-Trim匹配成功');
                 return { success: true, content: newContent };
             }
-            console.log('[AI Assistant] 策略2-Trim匹配失败');
 
             // 策略3: 模糊匹配 - 在trimmed全文中查找trimmed选中文字的位置
             const trimmedFullContent = fullContent.trim();
             const trimmedIndex = trimmedFullContent.indexOf(trimmedSelected);
-            console.log('[AI Assistant] trimmedIndex:', trimmedIndex);
             if (trimmedIndex !== -1) {
                 // 计算原文中的对应位置
                 const beforeTrim = fullContent.substring(0, fullContent.indexOf(trimmedFullContent.substring(0, trimmedIndex > 0 ? trimmedIndex : 0)));
                 const afterTrimStart = fullContent.indexOf(trimmedFullContent) + trimmedIndex + trimmedSelected.length;
                 const afterTrim = fullContent.substring(afterTrimStart);
                 const newContent = beforeTrim + newText + afterTrim;
-                console.log('[AI Assistant] 策略3-模糊匹配成功');
                 return { success: true, content: newContent };
             }
-            console.log('[AI Assistant] 策略3-模糊匹配失败');
 
             // 策略4: 如果所有策略都失败，使用DOM选区进行精确替换
-            console.log('[AI Assistant] 所有字符串匹配策略失败，尝试DOM选区替换');
             return await this.smartReplaceByDOMSelection(blockId, selectedText, newText);
 
         } catch (error) {
-            console.error('[AI Assistant] 智能替换失败:', error);
             return { success: false, error: String(error) };
         }
     }
@@ -356,20 +332,19 @@ export class BlockService {
             const selection = window.getSelection();
             if (!selection || selection.rangeCount === 0) {
                 // 无选区，回退到完整替换
-                console.warn('[AI Assistant] 无DOM选区，回退到完整替换');
                 return { success: true, content: newText };
             }
 
             const range = selection.getRangeAt(0);
-            
+
             // 获取选区的精确位置信息
             const startOffset = range.startOffset;
             const endOffset = range.endOffset;
-            
+
             // 获取选区在原文中的精确位置
             // 这里我们使用一个简单的方法：在block content中找到选中文字的位置
             // 如果找不到，说明选区可能已经变化
-            
+
             // 尝试多种匹配方式
             const matchPatterns = [
                 selectedText,
@@ -394,16 +369,13 @@ export class BlockService {
                 const before = blockInfo.content.substring(0, bestIndex);
                 const after = blockInfo.content.substring(bestIndex + bestMatch.length);
                 const newContent = before + newText + after;
-                console.log('[AI Assistant] DOM选区替换成功');
                 return { success: true, content: newContent };
             }
 
             // 如果还是找不到，使用完整的AI结果替换
-            console.warn('[AI Assistant] 无法找到选中文字在原文中的位置，回退到完整替换');
             return { success: true, content: newText };
 
         } catch (error) {
-            console.error('[AI Assistant] DOM选区替换失败:', error);
             return { success: false, error: String(error) };
         }
     }

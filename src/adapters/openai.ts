@@ -85,7 +85,6 @@ export class OpenAIAdapter extends BaseProviderAdapter {
             });
             return true;
         } catch (error) {
-            console.error('[AI Assistant] Connection test failed:', error);
             return false;
         }
     }

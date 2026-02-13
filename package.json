@@ -1,6 +1,6 @@
 {
   "name": "siyuan-ai-assistant",
-  "version": "0.1.5",
+  "version": "0.1.5.1",
   "description": "思源笔记AI助手插件 - 支持多AI提供商的智能助手",
   "type": "module",
   "scripts": {
@@ -17,7 +17,7 @@
     "ollama",
     "openai"
   ],
-  "author": "AI Assistant Developer",
+  "author": "DUZSSY",
   "license": "MIT",
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.0",

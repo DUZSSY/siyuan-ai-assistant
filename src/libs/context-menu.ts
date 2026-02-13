@@ -1,4 +1,5 @@
 import type { AIOperationType } from '../types';
+import { settingsService } from '../services/settings';
 
 export interface ContextMenuOptions {
     onOperation: (type: AIOperationType, blockId: string) => void;
@@ -17,8 +18,9 @@ export class ContextMenuManager {
      * Inject AI menu into block icon menu
      */
     injectIntoBlockMenu(event: CustomEvent): void {
-        const settings = window.siyuan?.config?.pluginSettings?.['siyuan-ai-assistant'];
-        if (settings && !settings.showContextMenu) {
+        // 使用 settingsService 获取设置，而不是 window.siyuan.config
+        const settings = settingsService.getSettings();
+        if (!settings.showContextMenu) {
             return;
         }
 
@@ -156,5 +158,12 @@ export class ContextMenuManager {
             this.menuElement.remove();
             this.menuElement = null;
         }
+    }
+
+    /**
+     * Destroy the context menu manager
+     */
+    destroy(): void {
+        this.hide();
     }
 }

@@ -31,7 +31,7 @@ export class SettingsService {
                 this.settings = { ...this.getDefaultSettings(), ...data };
             }
         } catch (error) {
-            console.error('[AI Assistant] Failed to load settings:', error);
+            // 加载设置失败，使用默认设置
         }
     }
 
@@ -41,7 +41,7 @@ export class SettingsService {
         try {
             await this.plugin.saveData(STORAGE_KEY, this.settings);
         } catch (error) {
-            console.error('[AI Assistant] Failed to save settings:', error);
+            // 保存设置失败
         }
     }
 

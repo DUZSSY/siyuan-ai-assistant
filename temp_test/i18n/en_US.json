@@ -1,0 +1,68 @@
+{
+  "title": "AI Assistant",
+  "loading": "Loading...",
+  "send": "Send",
+  "cancel": "Cancel",
+  "save": "Save",
+  "close": "Close",
+  "settings": "Settings",
+  "providers": {
+    "title": "AI Providers",
+    "add": "Add Provider",
+    "edit": "Edit Provider",
+    "delete": "Delete Provider",
+    "test": "Test Connection",
+    "default": "Default",
+    "name": "Name",
+    "apiKey": "API Key",
+    "baseURL": "API URL",
+    "model": "Model",
+    "temperature": "Temperature",
+    "maxTokens": "Max Tokens"
+  },
+  "operations": {
+    "chat": "Chat",
+    "polish": "Polish",
+    "translate": "Translate",
+    "summarize": "Summarize",
+    "expand": "Expand",
+    "condense": "Condense",
+    "rewrite": "Rewrite",
+    "continue": "Continue",
+    "custom1": "Custom 1",
+    "custom2": "Custom 2",
+    "custom3": "Custom 3"
+  },
+  "messages": {
+    "noProvider": "Please configure an AI provider first",
+    "connectionSuccess": "Connection successful",
+    "connectionFailed": "Connection failed",
+    "processing": "Processing...",
+    "error": "Processing failed, please check configuration",
+    "noSelection": "Please select text first"
+  },
+  "diff": {
+    "title": "Diff View",
+    "original": "Original",
+    "modified": "Modified",
+    "accept": "Accept",
+    "reject": "Reject",
+    "acceptAll": "Accept All",
+    "rejectAll": "Reject All",
+    "apply": "Apply Changes",
+    "unchanged": "Unchanged",
+    "modified": "Modified"
+  },
+  "chat": {
+    "placeholder": "Type a message... (Enter to send, Shift+Enter for new line)",
+    "newChat": "New Chat",
+    "history": "History",
+    "noHistory": "No conversation history",
+    "quickActions": {
+      "polish": "Polish",
+      "translate": "Translate",
+      "summarize": "Summarize",
+      "expand": "Expand"
+    }
+  }
+}

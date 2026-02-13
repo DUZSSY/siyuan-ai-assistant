@@ -1,0 +1,39 @@
+{
+  "name": "siyuan-ai-assistant",
+  "author": "AI Assistant Developer",
+  "url": "https://github.com/yourusername/siyuan-ai-assistant",
+  "version": "0.1.5",
+  "minAppVersion": "3.5.3",
+  "backends": ["windows", "linux", "darwin", "docker"],
+  "frontends": ["desktop", "browser-desktop", "desktop-window"],
+  "displayName": {
+    "default": "AI Assistant",
+    "zh_CN": "AI助手"
+  },
+  "description": {
+    "default": "AI assistant plugin for SiYuan Note, supporting multiple AI providers including OpenAI, Ollama, DeepSeek, etc.",
+    "zh_CN": "思源笔记AI助手插件，支持OpenAI、Ollama、DeepSeek等多种AI提供商"
+  },
+  "readme": {
+    "default": "README.md",
+    "zh_CN": "README.md"
+  },
+  "funding": {
+    "openCollective": "",
+    "patreon": "",
+    "github": "",
+    "custom": []
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "ollama",
+    "openai",
+    "deepseek",
+    "chatgpt",
+    "translation",
+    "polish",
+    "summarize",
+    "智能助手"
+  ]
+}

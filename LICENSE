@@ -1,44 +1,21 @@
-# AI Assistant Plugin for SiYuan Note
+MIT License
 
-思源笔记AI助手插件 - 专注于文本块级 AI 编辑
+Copyright (c) 2025 DUZSSY
 
-## 功能特性
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-- 🤖 多AI提供商支持（OpenAI、Ollama、DeepSeek、Moonshot等）
-- ✨ 文本润色、翻译、总结、扩写
-- 💬 对话式AI交互
-- 📊 差异对比和接受/拒绝修改
-- 🎯 浮动工具栏和右键菜单集成
-- 📝 对话历史管理
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-## 安装
-
-1. 下载 `package.zip`
-2. 解压到思源笔记的 `data/plugins/siyuan-ai-assistant/` 目录
-3. 重启思源笔记
-4. 在设置中配置AI提供商
-
-## 快速开始
-
-1. 点击顶部栏的 🤖 图标打开AI助手面板
-2. 或选中文本使用浮动工具栏
-3. 配置AI提供商（推荐使用Ollama本地部署）
-
-## 配置Ollama（推荐）
-
-1. 安装 [Ollama](https://ollama.com)
-2. 拉取模型：`ollama pull llama3.2`
-3. 插件设置中使用默认Ollama配置
-
-## 快捷键
-
-- `Alt+Cmd+A`: 打开/关闭AI助手面板
-
-## 隐私说明
-
-- API密钥本地存储，不会上传到任何服务器
-- 支持本地Ollama部署，数据完全本地处理
-
-## 许可证
-
-MIT
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

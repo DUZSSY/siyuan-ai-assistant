@@ -19,12 +19,20 @@ export class FloatingToolbar {
     private currentSelectionStart: number = -1;
     private currentSelectionEnd: number = -1;
     private modelDropdownElement: HTMLElement | null = null;
-    
+
     // 拖拽相关
     private isDragging = false;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
     private isPinned = false;
+
+    // 事件处理器引用（用于正确移除监听器）
+    private mouseUpHandler: ((e: MouseEvent) => void) | null = null;
+    private mouseDownHandler: ((e: MouseEvent) => void) | null = null;
+    private scrollHandler: (() => void) | null = null;
+    private keyDownHandler: ((e: KeyboardEvent) => void) | null = null;
+    private mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
+    private globalMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
     constructor(options: FloatingToolbarOptions) {
         this.options = options;
@@ -34,14 +42,15 @@ export class FloatingToolbar {
     private bindEvents(): void {
         let selectionTimeout: number;
 
-        document.addEventListener('mouseup', (e) => {
+        // 保存处理器引用以便后续移除
+        this.mouseUpHandler = (e: MouseEvent) => {
             clearTimeout(selectionTimeout);
             selectionTimeout = window.setTimeout(() => {
                 this.handleSelectionChange(e);
             }, 200);
-        });
+        };
 
-        document.addEventListener('mousedown', (e) => {
+        this.mouseDownHandler = (e: MouseEvent) => {
             const target = e.target as Node;
             if (this.modelDropdownElement && !this.modelDropdownElement.contains(target)) {
                 this.hideModelDropdown();
@@ -49,19 +58,24 @@ export class FloatingToolbar {
             if (this.toolbarElement && !this.toolbarElement.contains(target)) {
                 this.hide();
             }
-        });
+        };
 
-        document.addEventListener('scroll', () => {
+        this.scrollHandler = () => {
             this.hide();
             this.hideModelDropdown();
-        }, true);
+        };
 
-        document.addEventListener('keydown', (e) => {
+        this.keyDownHandler = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 this.hideModelDropdown();
                 this.hide();
             }
-        });
+        };
+
+        document.addEventListener('mouseup', this.mouseUpHandler);
+        document.addEventListener('mousedown', this.mouseDownHandler);
+        document.addEventListener('scroll', this.scrollHandler, true);
+        document.addEventListener('keydown', this.keyDownHandler);
     }
 
     private handleSelectionChange(event: MouseEvent): void {
@@ -89,8 +103,7 @@ export class FloatingToolbar {
         }
 
         this.currentBlockId = blockService.getCurrentBlockId();
-        console.log('[AI Assistant] Selected block ID:', this.currentBlockId, 'Text length:', text.length);
-        
+
         // 计算选中文字在块内容中的精确位置
         this.calculateSelectionIndices(selection, text);
         
@@ -124,7 +137,6 @@ export class FloatingToolbar {
         }
 
         if (!blockElement) {
-            console.warn('[AI Assistant] 无法找到包含选中文字的块元素');
             return;
         }
 
@@ -152,27 +164,14 @@ export class FloatingToolbar {
         this.currentSelectionStart = startOffset;
         this.currentSelectionEnd = endOffset;
 
-        console.log('[AI Assistant] 选中位置计算:', {
-            blockContent: blockContent.substring(0, 50) + '...',
-            selectedText: rawSelectedText.substring(0, 30) + '...',
-            startOffset,
-            endOffset,
-            totalLength: blockContent.length
-        });
-
         // 验证计算结果
         const extractedText = blockContent.substring(startOffset, endOffset);
         if (extractedText !== rawSelectedText) {
-            console.warn('[AI Assistant] 索引计算可能有误:', {
-                expected: rawSelectedText,
-                extracted: extractedText
-            });
             // 回退方案：使用 indexOf 查找第一次出现的位置
             const fallbackIndex = blockContent.indexOf(rawSelectedText);
             if (fallbackIndex !== -1) {
                 this.currentSelectionStart = fallbackIndex;
                 this.currentSelectionEnd = fallbackIndex + rawSelectedText.length;
-                console.log('[AI Assistant] 使用回退索引:', this.currentSelectionStart, this.currentSelectionEnd);
             }
         }
     }
@@ -393,15 +392,12 @@ export class FloatingToolbar {
             
             item.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                console.log('[AI Assistant] Switching to provider:', provider.name, provider.model);
-                
+
                 await settingsService.setCurrentProvider(provider.id);
                 aiService.setProvider(provider);
-                
+
                 this.refreshToolbar();
                 this.hideModelDropdown();
-                
-                console.log('[AI Assistant] Provider switched successfully to:', provider.name);
             });
             
             item.addEventListener('mouseenter', () => {
@@ -500,7 +496,6 @@ export class FloatingToolbar {
                 pinBtn.style.opacity = this.isPinned ? '1' : '0.6';
                 pinBtn.textContent = this.isPinned ? '📍' : '📌';
                 pinBtn.title = this.isPinned ? '已固定，点击取消固定' : '固定位置';
-                console.log('[AI Assistant] 工具栏已', this.isPinned ? '固定' : '取消固定');
             });
         }
         
@@ -537,29 +532,32 @@ export class FloatingToolbar {
         this.toolbarElement = toolbar;
 
         // 全局鼠标移动和释放事件（用于拖拽）
-        document.addEventListener('mousemove', (e) => {
+        this.mouseMoveHandler = (e: MouseEvent) => {
             if (this.isDragging && this.toolbarElement) {
                 e.preventDefault();
                 const newLeft = e.clientX - this.dragOffsetX;
                 const newTop = e.clientY - this.dragOffsetY;
-                
+
                 // 确保不超出视口边界
                 const maxLeft = window.innerWidth - this.toolbarElement.offsetWidth - 10;
                 const maxTop = window.innerHeight - this.toolbarElement.offsetHeight - 10;
-                
+
                 this.toolbarElement.style.left = `${Math.max(10, Math.min(newLeft, maxLeft))}px`;
                 this.toolbarElement.style.top = `${Math.max(10, Math.min(newTop, maxTop))}px`;
             }
-        });
+        };
 
-        document.addEventListener('mouseup', () => {
+        this.globalMouseUpHandler = () => {
             if (this.isDragging) {
                 this.isDragging = false;
                 if (this.toolbarElement) {
                     this.toolbarElement.style.cursor = 'default';
                 }
             }
-        });
+        };
+
+        document.addEventListener('mousemove', this.mouseMoveHandler);
+        document.addEventListener('mouseup', this.globalMouseUpHandler);
 
         toolbar.addEventListener('mouseenter', () => {
             if (this.hideTimeout) {
@@ -584,19 +582,16 @@ export class FloatingToolbar {
         if (this.currentBlockId) {
             const fullBlockContent = await blockService.getBlockContent(this.currentBlockId);
             blockContent = fullBlockContent?.content || '';
-            console.log('[AI Assistant] 获取完整块内容:', blockContent?.substring(0, 50), 'blockId:', this.currentBlockId);
         }
-        
+
         // 如果无法获取完整块内容，从DOM获取
         if (!blockContent) {
             blockContent = this.getFullBlockContentFromDOM();
-            console.log('[AI Assistant] 从DOM获取完整块内容:', blockContent?.substring(0, 50));
         }
-        
+
         // 最终回退方案：使用选中的文字
         if (!blockContent) {
             blockContent = this.currentSelection;
-            console.warn('[AI Assistant] 无法获取完整块内容，使用选中文字代替');
         }
 
         // 构建提示词：告诉AI只处理选中部分
@@ -620,7 +615,6 @@ export class FloatingToolbar {
             finalPrompt = prompt || '';
         }
 
-        console.log('[AI Assistant] Starting operation:', type, 'isPartialSelection:', isPartialSelection);
         this.options.onOperationStart(
             type, 
             blockContent, 
@@ -642,7 +636,6 @@ export class FloatingToolbar {
             const response = await aiService['adapter']?.chatCompletion(messages);
 
             if (response) {
-                console.log('[AI Assistant] Operation completed');
                 // 传递完整块内容用于差异显示，传递选中文字和索引用于精确替换
                 this.options.onOperation(
                     type,
@@ -655,7 +648,6 @@ export class FloatingToolbar {
                 );
             }
         } catch (error) {
-            console.error('[AI Assistant] Operation failed:', error);
             alert('操作失败，请检查AI提供商配置');
         } finally {
             this.setLoading(false);
@@ -686,7 +678,6 @@ export class FloatingToolbar {
             if (element.classList && element.classList.contains('p')) {
                 // 获取块内的所有文本内容
                 const blockText = element.textContent || '';
-                console.log('[AI Assistant] 从DOM找到块内容:', blockText?.substring(0, 50));
                 return blockText;
             }
             element = element.parentElement;
@@ -720,6 +711,33 @@ export class FloatingToolbar {
     destroy(): void {
         this.hide();
         this.hideModelDropdown();
+
+        // 移除所有事件监听器
+        if (this.mouseUpHandler) {
+            document.removeEventListener('mouseup', this.mouseUpHandler);
+            this.mouseUpHandler = null;
+        }
+        if (this.mouseDownHandler) {
+            document.removeEventListener('mousedown', this.mouseDownHandler);
+            this.mouseDownHandler = null;
+        }
+        if (this.scrollHandler) {
+            document.removeEventListener('scroll', this.scrollHandler, true);
+            this.scrollHandler = null;
+        }
+        if (this.keyDownHandler) {
+            document.removeEventListener('keydown', this.keyDownHandler);
+            this.keyDownHandler = null;
+        }
+        if (this.mouseMoveHandler) {
+            document.removeEventListener('mousemove', this.mouseMoveHandler);
+            this.mouseMoveHandler = null;
+        }
+        if (this.globalMouseUpHandler) {
+            document.removeEventListener('mouseup', this.globalMouseUpHandler);
+            this.globalMouseUpHandler = null;
+        }
+
         if (this.toolbarElement) {
             this.toolbarElement.remove();
             this.toolbarElement = null;

@@ -25,10 +25,9 @@ export default class AIAssistantPlugin extends Plugin {
     private currentSelectedText: string = '';  // 选中的文字用于精确替换
     private currentSelectionStart: number = -1;  // 选中文字在原文中的起始索引
     private currentSelectionEnd: number = -1;  // 选中文字在原文中的结束索引
+    private blockIconClickHandler: ((event: CustomEvent) => void) | null = null; // eventBus监听器引用
 
     async onload() {
-        console.log(`[${PLUGIN_ID}] Plugin loading...`);
-
         // Initialize settings service
         settingsService.init(this);
         await settingsService.loadSettings();
@@ -49,14 +48,6 @@ export default class AIAssistantPlugin extends Plugin {
                 <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
             </symbol>
         `);
-
-        // Add top bar button
-        this.addTopBar({
-            icon: 'iconAIAssistant',
-            title: this.i18n.title || 'AI助手',
-            position: 'right',
-            callback: () => this.toggleDock()
-        });
 
         // Add dock
         this.addDock({
@@ -80,15 +71,6 @@ export default class AIAssistantPlugin extends Plugin {
 
         // Initialize context menu
         this.initContextMenu();
-
-        // Register commands
-        this.addCommand({
-            langKey: 'toggleAIAssistant',
-            hotkey: 'Alt+Cmd+A',
-            callback: () => this.toggleDock()
-        });
-
-        console.log(`[${PLUGIN_ID}] Plugin loaded successfully`);
     }
 
     onLayoutReady() {
@@ -100,18 +82,48 @@ export default class AIAssistantPlugin extends Plugin {
     }
 
     onunload() {
-        console.log(`[${PLUGIN_ID}] Plugin unloading...`);
-        
-        this.floatingToolbar?.destroy();
-        this.floatingToolbar = null;
-        
-        this.settingsDialog?.destroy();
-        this.settingsDialog = null;
-        
-        this.diffDialog?.destroy();
-        this.diffDialog = null;
+        // Clean up floating toolbar
+        if (this.floatingToolbar) {
+            this.floatingToolbar.destroy();
+            this.floatingToolbar = null;
+        }
 
-        console.log(`[${PLUGIN_ID}] Plugin unloaded`);
+        // Clean up context menu
+        if (this.contextMenuManager) {
+            this.contextMenuManager.destroy();
+            this.contextMenuManager = null;
+        }
+
+        // Clean up dialogs
+        if (this.settingsDialog) {
+            this.settingsDialog.destroy();
+            this.settingsDialog = null;
+        }
+
+        if (this.diffDialog) {
+            this.diffDialog.destroy();
+            this.diffDialog = null;
+        }
+
+        // Clean up chat panel
+        if (this.chatPanelComponent) {
+            this.chatPanelComponent.$destroy();
+            this.chatPanelComponent = null;
+        }
+
+        // Remove eventBus listener
+        if (this.blockIconClickHandler) {
+            this.eventBus.off('click-blockicon', this.blockIconClickHandler);
+            this.blockIconClickHandler = null;
+        }
+    }
+
+    /**
+     * Uninstall plugin - remove config files
+     */
+    async uninstall() {
+        // Clean up settings data
+        await this.removeData(PLUGIN_ID);
     }
 
     /**
@@ -160,7 +172,6 @@ export default class AIAssistantPlugin extends Plugin {
                     const response = await aiService.processText(block.content, type);
                     this.showDiffViewer(block.content, response.content, type, blockId);
                 } catch (error) {
-                    console.error('[AI Assistant] Context menu operation failed:', error);
                     alert('操作失败，请检查AI提供商配置');
                 }
             },
@@ -168,21 +179,10 @@ export default class AIAssistantPlugin extends Plugin {
         });
 
         // Listen for block icon clicks
-        this.eventBus.on('click-blockicon', (event: CustomEvent) => {
+        this.blockIconClickHandler = (event: CustomEvent) => {
             this.contextMenuManager?.injectIntoBlockMenu(event);
-        });
-    }
-
-    private toggleDock() {
-        const dock = document.querySelector(`[data-type="${DOCK_TYPE}"]`);
-        if (dock) {
-            const isHidden = dock.classList.contains('fn__none');
-            if (isHidden) {
-                dock.classList.remove('fn__none');
-            } else {
-                dock.classList.add('fn__none');
-            }
-        }
+        };
+        this.eventBus.on('click-blockicon', this.blockIconClickHandler);
     }
 
     private openSettings() {
@@ -222,19 +222,10 @@ export default class AIAssistantPlugin extends Plugin {
         const targetBlockId = blockId;
         
         // 保存完整内容和选中文字用于应用修改时精确替换
-        // ⚠️ 重要：直接使用保存的内容，不再调用API获取（API可能返回空）
         this.currentOriginalText = original;
         this.currentSelectedText = selectedText || '';
         this.currentSelectionStart = selectionStart ?? -1;
         this.currentSelectionEnd = selectionEnd ?? -1;
-
-        console.log('[AI Assistant] showDiffViewer called:');
-        console.log('  - original (完整内容):', original?.substring(0, 50));
-        console.log('  - modified (AI结果):', modified?.substring(0, 50));
-        console.log('  - selectedText (选中文字):', selectedText);
-        console.log('  - selectionStart (起始索引):', this.currentSelectionStart);
-        console.log('  - selectionEnd (结束索引):', this.currentSelectionEnd);
-        console.log('  - this.currentOriginalText 已保存:', this.currentOriginalText?.substring(0, 50));
 
         const container = document.createElement('div');
 
@@ -252,107 +243,50 @@ export default class AIAssistantPlugin extends Plugin {
         // 使用$on监听Svelte事件
         this.currentDiffViewer.$on('apply', async (event: CustomEvent<string>) => {
             const result = event.detail;
-            console.log('[AI Assistant] Applying changes');
-            console.log('  - result (DiffViewer返回):', result?.substring(0, 50));
-            console.log('  - this.currentOriginalText:', this.currentOriginalText?.substring(0, 50));
-            console.log('  - this.currentSelectionStart:', this.currentSelectionStart);
-            console.log('  - this.currentSelectionEnd:', this.currentSelectionEnd);
             
             if (this.currentOriginalText) {
                 let newContent: string;
                 
-                // 优先使用索引进行精确替换（解决多相同字符的问题）
+                // 优先使用索引进行精确替换
                 if (this.currentSelectionStart >= 0 && this.currentSelectionEnd > this.currentSelectionStart) {
-                    // 使用索引进行精确替换
                     const beforeSelection = this.currentOriginalText.substring(0, this.currentSelectionStart);
                     const afterSelection = this.currentOriginalText.substring(this.currentSelectionEnd);
                     newContent = beforeSelection + result + afterSelection;
-                    
-                    console.log('[AI Assistant] 使用索引精确替换成功:');
-                    console.log('  - 前缀:', beforeSelection?.substring(0, 30) + '...');
-                    console.log('  - 替换后:', result?.substring(0, 30) + '...');
-                    console.log('  - 后缀:', afterSelection?.substring(0, 30) + '...');
                 } else {
-                    // 回退方案：使用正则替换（向后兼容）
-                    console.warn('[AI Assistant] 索引信息不可用，使用回退方案');
-                    
-                    // ⚠️ 重要：实时从 DOM 获取选中文字，而不是依赖保存的值
+                    // 回退方案：使用 DOM 中的选中文字
                     const domSelectedText = blockService.getSelectedText();
-                    console.log('  - DOM选中文字:', domSelectedText);
-                    
-                    // 优先使用 DOM 中的选中文字，如果为空则使用保存的值
                     const textToReplace = domSelectedText || this.currentSelectedText || this.currentOriginalText;
-                    console.log('  - 最终用于替换的文字:', textToReplace);
-                    
-                    // 直接在保存的原文上进行替换，不调用API
                     newContent = this.currentOriginalText;
                     
-                    // 尝试精确匹配并替换
                     const escapedSelected = textToReplace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const regex = new RegExp(escapedSelected, '');
                     
                     if (regex.test(newContent)) {
                         newContent = newContent.replace(regex, result);
-                        console.log('[AI Assistant] 正则替换成功:', newContent);
                     } else {
-                        // 如果找不到匹配，尝试trim后匹配
                         const trimmedSelected = textToReplace.trim();
                         const trimmedRegex = new RegExp(trimmedSelected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), '');
                         if (trimmedRegex.test(newContent)) {
                             newContent = newContent.replace(trimmedRegex, result);
-                            console.log('[AI Assistant] Trim替换成功:', newContent);
                         } else {
-                            // 如果 trim 后还是找不到，说明选中的文字不在原文中
-                            console.warn('[AI Assistant] 无法找到选中文字在原文中的位置');
-                            console.warn('[AI Assistant] 原文:', newContent);
-                            console.warn('[AI Assistant] 要替换的文字:', textToReplace);
-                            // 回退到 AI 结果（只替换选中的部分，保持原文其他内容）
-                            // 方案：在原文中找到最接近的位置进行替换
-                            if (domSelectedText && newContent.includes(domSelectedText.substring(0, 10))) {
-                                // 找到部分匹配，尝试模糊替换
-                                const partialMatch = domSelectedText.substring(0, Math.min(10, domSelectedText.length));
-                                const partialIndex = newContent.indexOf(partialMatch);
-                                if (partialIndex !== -1) {
-                                    const beforePartial = newContent.substring(0, partialIndex);
-                                    // 找到选中文字在原文中的结束位置
-                                    let endOffset = partialIndex + partialMatch.length;
-                                    while (endOffset < newContent.length && endOffset < partialIndex + domSelectedText.length) {
-                                        endOffset++;
-                                    }
-                                    const afterPartial = newContent.substring(endOffset);
-                                    newContent = beforePartial + result + afterPartial;
-                                    console.log('[AI Assistant] 模糊替换成功:', newContent);
-                                }
-                            } else {
-                                // 完全无法匹配，回退到完整替换（但保留原文）
-                                console.error('[AI Assistant] 严重错误：选中文字不在原文中！');
-                                alert('应用失败：无法在原文中找到选中的文字');
-                                this.diffDialog?.destroy();
-                                this.diffDialog = null;
-                                return;
-                            }
+                            alert('应用失败：无法在原文中找到选中的文字');
+                            this.diffDialog?.destroy();
+                            this.diffDialog = null;
+                            return;
                         }
                     }
                 }
                 
                 // 直接更新块内容
                 if (targetBlockId) {
-                    console.log('[AI Assistant] Updating block:', targetBlockId);
-                    console.log('[AI Assistant] 最终内容:', newContent);
                     const success = await blockService.updateBlock(targetBlockId, newContent);
-                    if (success) {
-                        console.log('[AI Assistant] Block updated successfully');
-                    } else {
-                        console.error('[AI Assistant] Failed to update block');
+                    if (!success) {
                         alert('应用修改失败，请重试');
                     }
                 } else {
-                    console.error('[AI Assistant] No block ID found');
                     alert('无法确定要更新的文本块');
                 }
             } else {
-                // 如果没有保存的内容，回退到AI结果
-                console.warn('[AI Assistant] 没有保存的内容，使用AI结果');
                 if (targetBlockId) {
                     const success = await blockService.updateBlock(targetBlockId, result);
                     if (!success) {
@@ -374,7 +308,6 @@ export default class AIAssistantPlugin extends Plugin {
         // 重新生成请求
         this.currentDiffViewer.$on('regenerate', async (event: CustomEvent<{ instruction: string; original: string; currentModified: string }>) => {
             const { instruction, original, currentModified } = event.detail;
-            console.log('[AI Assistant] Regenerating:', instruction);
             
             this.updateDiffViewer('⏳ 正在重新生成...');
             
@@ -399,15 +332,12 @@ ${instruction}
                 const response = await aiService['adapter']?.chatCompletion(messages);
                 
                 if (response && response.content) {
-                    console.log('[AI Assistant] Regenerated successfully');
                     this.updateDiffViewer(response.content);
                 } else {
-                    console.error('[AI Assistant] Regeneration failed: empty response');
                     alert('重新生成失败，请重试');
                     this.updateDiffViewer(currentModified);
                 }
             } catch (error) {
-                console.error('[AI Assistant] Regeneration error:', error);
                 alert('重新生成时出错，请检查AI提供商配置');
                 this.updateDiffViewer(currentModified);
             }
@@ -416,27 +346,22 @@ ${instruction}
         // 模型切换请求
         this.currentDiffViewer.$on('switchModel', async (event: CustomEvent<string>) => {
             const providerId = event.detail;
-            console.log('[AI Assistant] Switching model to:', providerId);
             
             try {
                 await settingsService.setCurrentProvider(providerId);
                 aiService.setProvider(settingsService.getCurrentProvider());
                 
-                // 使用当前provider重新处理
                 this.updateDiffViewer('⏳ 正在使用新模型重新处理...');
                 
                 const messages = aiService.buildOperationMessages(original, operation);
                 const response = await aiService['adapter']?.chatCompletion(messages);
                 
                 if (response && response.content) {
-                    console.log('[AI Assistant] Model switch and reprocess completed');
                     this.updateDiffViewer(response.content);
                 } else {
-                    console.error('[AI Assistant] Reprocess failed');
                     alert('使用新模型处理失败，请重试');
                 }
             } catch (error) {
-                console.error('[AI Assistant] Model switch error:', error);
                 alert('切换模型失败');
             }
         });
@@ -469,8 +394,6 @@ ${instruction}
 
     private updateDiffViewer(modified: string, original?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) {
         if (this.currentDiffViewer) {
-            console.log('[AI Assistant] Updating diff viewer with new content');
-            
             // 构建要更新的 props
             const updateProps: any = { modified };
             if (selectedText !== undefined) {
