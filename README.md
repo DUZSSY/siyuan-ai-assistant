@@ -83,6 +83,31 @@ Add corresponding API keys in plugin settings.
 - ✅ Optional sensitive information masking
 - ✅ Open source, auditable code
 
+## 📝 Changelog
+
+### v0.1.6
+- 🐛 Fixed floating toolbar still working after plugin disabled
+- 🐛 Fixed context menu not showing
+- 🐛 Fixed ContextMenuManager missing destroy() method causing TypeError
+- 🐛 Fixed FloatingToolbar event listener leak causing duplicate toolbars
+- 🐛 Fixed eventBus listener not being removed on plugin unload
+- 🐛 Fixed uninstall() using wrong storage key
+- 🐛 Removed all debug console logs (45 instances)
+- 🐛 Cleaned up packaged icon.png.txt file
+- 📝 Version now follows semver (0.1.5.1 → 0.1.6)
+
+### v0.1.5
+- ✨ Added draggable floating toolbar with pin functionality
+- ✨ Optimized text replacement precision (supports multi-same-character positioning)
+- ✨ Diff popup original text display optimization
+- 🐛 Fixed various stability issues
+
+### v0.1.0
+- 🎉 Initial release
+- Multi-AI provider support
+- Basic text processing features
+- Conversational interaction
+
 ## 📄 License
 
 MIT License
