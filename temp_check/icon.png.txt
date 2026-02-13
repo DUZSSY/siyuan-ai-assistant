@@ -1,3 +1,0 @@
-# This is a placeholder for the plugin icon
-# Please replace with a 160x160 PNG image
-# You can create one using any image editor or online tool
