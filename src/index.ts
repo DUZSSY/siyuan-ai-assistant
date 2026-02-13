@@ -12,6 +12,7 @@ import type { AIOperationType } from './types';
 import './index.scss';
 
 const PLUGIN_ID = 'siyuan-ai-assistant';
+const STORAGE_KEY = 'ai-assistant-settings';
 const DOCK_TYPE = 'ai_assistant_dock';
 
 export default class AIAssistantPlugin extends Plugin {
@@ -122,8 +123,8 @@ export default class AIAssistantPlugin extends Plugin {
      * Uninstall plugin - remove config files
      */
     async uninstall() {
-        // Clean up settings data
-        await this.removeData(PLUGIN_ID);
+        // Clean up settings data - must match STORAGE_KEY in settings.ts
+        await this.removeData(STORAGE_KEY);
     }
 
     /**
