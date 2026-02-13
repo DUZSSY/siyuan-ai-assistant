@@ -239,9 +239,17 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
         maxTokens: 2048
     },
     {
-        name: '智谱AI (GLM-4-Flash)',
+        name: '智谱AI (Z.ai)',
         baseURL: 'https://open.bigmodel.cn/api/paas/v4',
         model: 'glm-4-flash',
+        apiKey: '',
+        temperature: 0.7,
+        maxTokens: 4096
+    },
+    {
+        name: 'Claude (Anthropic)',
+        baseURL: 'https://api.anthropic.com/v1',
+        model: 'claude-3-sonnet-20240229',
         apiKey: '',
         temperature: 0.7,
         maxTokens: 4096
@@ -259,7 +267,7 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
 export const DEFAULT_PROMPTS: Record<AIOperationType, string> = {
     chat: '',
     polish: '优化以下文本的表达，使其更流畅、专业。保持原意，仅输出修改后的文本：',
-    translate: '将以下文本翻译成目标语言（中文→英文，英文→中文）。保持原意和语气，仅输出译文：',
+    translate: '请将以下文本翻译成目标语言。规则：1.如果文本是中文，翻译成英文；2.如果文本是英文或其他语言，翻译成中文；3.必须输出翻译结果，禁止输出原文；4.保持原意和专业术语准确，仅输出译文：',
     summarize: '提炼以下文本的核心要点，用3-5句话概括关键信息。仅输出总结内容：',
     expand: '基于以下内容进行扩展，增加相关细节和解释，使内容更丰富完整。保持主题一致：',
     condense: '压缩以下文本，去除冗余描述和重复信息，保留核心观点和关键数据：',

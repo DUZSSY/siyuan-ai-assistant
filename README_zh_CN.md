@@ -67,16 +67,36 @@
 3. 插件设置中选择 Ollama 提供商
 4. 使用默认配置即可（API地址：http://localhost:11434）
 
+**🌐 免费云模型推荐**（无需本地部署，截止2026年2月14日可用）：
+- **GPT-OSS 120B** - OpenAI开源大模型
+- **Qwen3** - 通义千问最新版本
+- **GLM-5** - 智谱AI新一代模型
+- **Gemini 3 Flash** - Google轻量级快速模型
+
+> 💡 这些云模型可通过兼容OpenAI API的服务使用，具体配置请参考各提供商文档。
+
 ### 其他AI提供商
 
 支持以下AI服务：
-- **OpenAI** (GPT-3.5/4)
-- **DeepSeek**
-- **Moonshot (Kimi)**
-- **智谱AI (GLM)**
-- **自定义 OpenAI 兼容 API**
+- **OpenAI** (GPT-5.2 Instant ⭐推荐 / GPT-5.2 Thinking / GPT-5.2 Pro)
+- **Claude** (Claude Sonnet 4.5 ⭐推荐 / Claude Opus 4.6)
+- **DeepSeek** (DeepSeek-V3.2 / DeepSeek-R1)
+- **Moonshot (Kimi)** (Kimi K2.5)
+- **智谱AI (Z.ai)** (GLM-4-Flash ⭐免费额度 / GLM-4.7 / GLM-5)
+- **自定义 OpenAI 兼容 API** (支持任何OpenAI API格式的服务)
+
+**💡 模型选择建议：**
+- **日常使用（润色/翻译/对话）**：GPT-5.2 Instant、Claude Sonnet 4.5、GLM-4-Flash（免费额度）
+- **专业写作/复杂推理**：GPT-5.2 Thinking、Claude Opus 4.6、GLM-5
+- **极致性能/代码任务**：GPT-5.2 Pro、Kimi K2.5
 
 在插件设置中添加对应API密钥即可使用。
+
+**💡 关于 Claude 支持**  
+Claude 通过 OpenAI API 兼容接口提供支持，配置方法：
+- API 地址: `https://api.anthropic.com/v1`
+- 模型: `claude-3-sonnet-20240229` 或 `claude-3-opus-20240229`
+- 需申请 Anthropic API Key
 
 ## 📖 使用说明
 
@@ -100,6 +120,7 @@
    - AI 处理完成后会弹出 Diff 对比窗口
    - 左侧显示原文，右侧显示修改后的内容
    - 删除的内容标记为红色，新增的内容标记为绿色
+   - ⚠️ **已知问题**：Diff 窗口左侧显示的"原文"偶尔可能包含超出选中范围的内容，这是显示问题，不影响实际替换效果
 
 4. **编辑和确认**
    - 点击"✏️ 直接编辑"可以手动修改 AI 结果
@@ -168,6 +189,11 @@
 
 ## 📝 更新日志
 
+### v0.1.9
+- 🐛 修复AI提供商配置逻辑的bug，解决了"AI错误请检查提供商配置"有概率弹出的问题
+- 📝 版本号更新（0.1.8 → 0.1.9）
+- 📝 更新文档，添加免费云模型推荐
+
 ### v0.1.8
 - 🐛 更新插件图片以符合市场要求
 - 🐛 修复 icon.png 和 preview.png 尺寸问题
@@ -216,3 +242,13 @@ MIT License
 - [GitHub 仓库](https://github.com/DUZSSY/siyuan-ai-assistant)
 - [思源笔记官网](https://b3log.org/siyuan)
 - [思源社区](https://ld246.com/tags/siyuan)
+
+---
+
+## 💝 支持开发
+
+如果本插件对你有帮助，欢迎打赏支持作者继续开发和维护！
+
+[![打赏支持](https://img.shields.io/badge/❤️-打赏支持-red)](https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator)
+
+您的支持是我持续改进插件的动力！❤️

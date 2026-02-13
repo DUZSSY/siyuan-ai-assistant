@@ -155,17 +155,40 @@ export default class AIAssistantPlugin extends Plugin {
                 // original 是完整块内容（用于显示差异）
                 // selectionStart/selectionEnd 是选中文字在原文中的精确索引
                 this.updateDiffViewer(modified, original, selectedText, selectionStart, selectionEnd);
+                // 操作完成后隐藏浮动工具栏
+                this.floatingToolbar?.forceHide();
             },
             onOperationStart: (type, original, blockId, selectedText, selectionStart, selectionEnd) => {
                 this.showDiffViewer(original, '⏳ 正在请求AI处理...', type, blockId, selectedText, selectionStart, selectionEnd);
+                // 开始操作时隐藏浮动工具栏
+                this.floatingToolbar?.forceHide();
             },
             onOpenSettings: () => this.openSettings()
         });
     }
 
+    private async ensureProviderConfigured(): Promise<boolean> {
+        if (!aiService.isConfigured()) {
+            const currentProvider = settingsService.getCurrentProvider();
+            if (currentProvider) {
+                aiService.setProvider(currentProvider);
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
     private initContextMenu() {
         this.contextMenuManager = new ContextMenuManager({
             onOperation: async (type, blockId) => {
+                // 确保 AI 提供商已配置
+                if (!await this.ensureProviderConfigured()) {
+                    alert('AI 提供商未配置，请先点击设置进行配置');
+                    this.openSettings();
+                    return;
+                }
+
                 const block = await blockService.getBlockContent(blockId);
                 if (!block) return;
 
@@ -173,7 +196,12 @@ export default class AIAssistantPlugin extends Plugin {
                     const response = await aiService.processText(block.content, type);
                     this.showDiffViewer(block.content, response.content, type, blockId);
                 } catch (error) {
-                    alert('操作失败，请检查AI提供商配置');
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    if (errorMsg.includes('not configured')) {
+                        alert('AI 提供商未配置，请先点击设置进行配置');
+                    } else {
+                        alert(`操作失败: ${errorMsg}`);
+                    }
                 }
             },
             onOpenSettings: () => this.openSettings()

@@ -82,6 +82,9 @@
       await settingsService.updateProvider(editingProvider.id, editingProvider);
     }
 
+    // 保存后立即更新 aiService 的 provider，确保配置生效
+    aiService.setProvider(editingProvider);
+
     loadSettings();
     editingProvider = null;
     isAddingProvider = false;
@@ -219,7 +222,10 @@
 <div class="settings-panel">
   <div class="settings-header">
     <h2>⚙️ AI助手设置</h2>
-    <button class="btn-close" on:click={onClose}>✕</button>
+    <div class="header-buttons">
+      <button class="btn-donate" on:click={() => window.open('https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator', '_blank')} title="打赏支持">❤️</button>
+      <button class="btn-close" on:click={onClose}>✕</button>
+    </div>
   </div>
 
   <div class="settings-tabs">
@@ -574,6 +580,26 @@
     h2 {
       margin: 0;
       font-size: 18px;
+    }
+  }
+
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-donate {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--b3-border-color);
     }
   }
 

@@ -26,6 +26,7 @@
 2. The floating toolbar automatically appears near the selected text
 3. Click the AI operation you need (polish/translate/summarize, etc.)
 4. View modifications in the Diff popup, then apply
+   - ⚠️ **Known Issue**: The "original text" displayed on the left side of the Diff window may occasionally include content beyond the selected range. This is a display issue and does not affect the actual replacement
 
 ### Method 2: Context Menu
 1. Right-click the block icon
@@ -49,16 +50,36 @@
 3. Select Ollama provider in plugin settings
 4. Use default configuration (API: http://localhost:11434)
 
+**🌐 Free Cloud Models Recommended** (No local deployment needed, available as of Feb 14, 2026):
+- **GPT-OSS 120B** - OpenAI's open-source large model
+- **Qwen3** - Latest version of Tongyi Qianwen
+- **GLM-5** - Zhipu AI's next-generation model
+- **Gemini 3 Flash** - Google's lightweight fast model
+
+> 💡 These cloud models can be used via OpenAI API-compatible services. Please refer to each provider's documentation for specific configuration.
+
 ### Other AI Providers
 
 Supported services:
-- **OpenAI** (GPT-3.5/4)
-- **DeepSeek**
-- **Moonshot (Kimi)**
-- **Zhipu AI (GLM)**
-- **Custom OpenAI-compatible API**
+- **OpenAI** (GPT-5.2 Instant ⭐recommended / GPT-5.2 Thinking / GPT-5.2 Pro)
+- **Claude** (Claude Sonnet 4.5 ⭐recommended / Claude Opus 4.6)
+- **DeepSeek** (DeepSeek-V3.2 / DeepSeek-R1)
+- **Moonshot (Kimi)** (Kimi K2.5)
+- **Zhipu AI (Z.ai)** (GLM-4-Flash ⭐free tier / GLM-4.7 / GLM-5)
+- **Custom OpenAI-compatible API** (supports any OpenAI API format service)
+
+**💡 Model Selection Guide:**
+- **Daily use (polish/translate/chat)**: GPT-5.2 Instant, Claude Sonnet 4.5, GLM-4-Flash (free tier)
+- **Professional writing/complex reasoning**: GPT-5.2 Thinking, Claude Opus 4.6, GLM-5
+- **Maximum performance/coding**: GPT-5.2 Pro, Kimi K2.5
 
 Add corresponding API keys in plugin settings.
+
+**💡 About Claude Support**  
+Claude is supported through OpenAI API-compatible interface. Configuration:
+- API URL: `https://api.anthropic.com/v1`
+- Model: `claude-3-sonnet-20240229` or `claude-3-opus-20240229`
+- Requires Anthropic API Key
 
 ## ⚠️ Disclaimer
 
@@ -84,6 +105,13 @@ Add corresponding API keys in plugin settings.
 - ✅ Open source, auditable code
 
 ## 📝 Changelog
+
+### v0.1.9
+- 🐛 Fixed AI provider configuration logic bug that caused random "AI error, please check provider configuration" alerts
+- 🎨 Enhanced translation prompt for better language detection
+- 🎨 Auto-hide floating toolbar when diff viewer opens
+- 📝 Version bump (0.1.8 → 0.1.9)
+- 📝 Updated documentation with free cloud model recommendations
 
 ### v0.1.8
 - 🐛 Updated plugin images to meet bazaar requirements
@@ -117,3 +145,13 @@ Add corresponding API keys in plugin settings.
 ## 📄 License
 
 MIT License
+
+---
+
+## 💝 Support Development
+
+If this plugin helps you, consider supporting the author to continue development and maintenance!
+
+[![Support](https://img.shields.io/badge/❤️-Support-red)](https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator)
+
+Your support motivates me to keep improving the plugin! ❤️

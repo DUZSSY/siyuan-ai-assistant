@@ -3,9 +3,9 @@
   "name": "siyuan-ai-assistant",
   "author": "DUZSSY",
   "url": "https://github.com/DUZSSY/siyuan-ai-assistant",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "minAppVersion": "3.5.3",
-  "disabledInPublish": true,
+  "disabledInPublish": false,
   "backends": ["windows", "linux", "darwin", "docker"],
   "frontends": ["desktop", "browser-desktop", "desktop-window"],
   "displayName": {
@@ -23,8 +23,10 @@
   "funding": {
     "openCollective": "",
     "patreon": "",
-    "github": "",
-    "custom": []
+    "github": "DUZSSY",
+    "custom": [
+      "https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator"
+    ]
   },
   "keywords": [
     "ai",

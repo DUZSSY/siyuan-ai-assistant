@@ -259,9 +259,9 @@ export class FloatingToolbar {
     }
     
     /**
-     * 强制隐藏（即使已固定）- 用于关闭按钮
+     * 强制隐藏（即使已固定）- 用于关闭按钮或操作完成后
      */
-    private forceHide(): void {
+    public forceHide(): void {
         if (!this.toolbarElement || !this.isVisible) return;
 
         this.toolbarElement.classList.remove('show');
@@ -519,6 +519,12 @@ export class FloatingToolbar {
             this.forceHide();
         });
         
+        // 打赏按钮
+        header.querySelector('.btn-donate')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.open('https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator', '_blank');
+        });
+        
         toolbar.appendChild(header);
 
         const buttonsContainer = document.createElement('div');
@@ -572,6 +578,18 @@ export class FloatingToolbar {
 
     private async handleOperation(type: AIOperationType): Promise<void> {
         if (!this.currentSelection) return;
+
+        // 确保 AI 提供商已配置
+        if (!aiService.isConfigured()) {
+            const currentProvider = settingsService.getCurrentProvider();
+            if (currentProvider) {
+                aiService.setProvider(currentProvider);
+            } else {
+                alert('AI 提供商未配置，请先点击设置进行配置');
+                this.options.onOpenSettings();
+                return;
+            }
+        }
 
         const settings = settingsService.getSettings();
         const customBtn = settings.customButtons.find((b: any) => b.id === type);
