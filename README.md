@@ -85,6 +85,12 @@ Add corresponding API keys in plugin settings.
 
 ## 📝 Changelog
 
+### v0.1.7
+- 🐛 Updated plugin images to meet bazaar requirements
+- 🐛 Fixed icon.png and preview.png size issues
+- 🐛 Updated description and documentation
+- 📝 Version bump (0.1.6 → 0.1.7)
+
 ### v0.1.6
 - 🐛 Fixed floating toolbar still working after plugin disabled
 - 🐛 Fixed context menu not showing
