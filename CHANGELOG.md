@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] - 2026-02-14
+
+### 📝 Changed
+- 更新了提示词，增强输出格式要求（强调仅输出处理结果，不添加解释）
+- Updated prompts with stricter output format requirements
+- 版本号更新 (0.1.9 → 0.1.10)
+- Version bump (0.1.9 → 0.1.10)
+
+### 🐛 Fixed
+- 优化了Diff窗口原文显示逻辑：优先显示选中的文字，而非整个块内容
+- Optimized Diff viewer original text display: shows selected text instead of full block content
+
 ## [0.1.9] - 2026-02-14
 
 ### 🐛 Fixed

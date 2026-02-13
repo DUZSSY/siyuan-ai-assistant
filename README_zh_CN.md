@@ -189,6 +189,10 @@ Claude 通过 OpenAI API 兼容接口提供支持，配置方法：
 
 ## 📝 更新日志
 
+### v0.1.10
+- 📝 更新了提示词，增强输出格式要求（强调仅输出处理结果，不添加解释）
+- 📝 版本号更新（0.1.9 → 0.1.10）
+
 ### v0.1.9
 - 🐛 修复AI提供商配置逻辑的bug，解决了"AI错误请检查提供商配置"有概率弹出的问题
 - 📝 版本号更新（0.1.8 → 0.1.9）
@@ -249,6 +253,6 @@ MIT License
 
 如果本插件对你有帮助，欢迎打赏支持作者继续开发和维护！
 
-[![打赏支持](https://img.shields.io/badge/❤️-打赏支持-red)](https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator)
+[![打赏支持](https://img.shields.io/badge/❤️-打赏支持-red)](https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc)
 
 您的支持是我持续改进插件的动力！❤️

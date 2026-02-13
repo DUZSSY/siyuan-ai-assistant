@@ -26,6 +26,7 @@ export default class AIAssistantPlugin extends Plugin {
     private currentSelectedText: string = '';  // 选中的文字用于精确替换
     private currentSelectionStart: number = -1;  // 选中文字在原文中的起始索引
     private currentSelectionEnd: number = -1;  // 选中文字在原文中的结束索引
+    private displayTextForDiff: string = '';  // 用于Diff窗口显示的原文（选中文字或整个块）
     private blockIconClickHandler: ((event: CustomEvent) => void) | null = null; // eventBus监听器引用
 
     async onload() {
@@ -189,12 +190,18 @@ export default class AIAssistantPlugin extends Plugin {
                     return;
                 }
 
+                // 获取当前选中的文字（如果有）
+                const selectedText = blockService.getSelectedText();
                 const block = await blockService.getBlockContent(blockId);
                 if (!block) return;
 
+                // 如果有选中的文字，使用选中文字；否则使用整个块内容
+                const inputText = selectedText || block.content;
+
                 try {
-                    const response = await aiService.processText(block.content, type);
-                    this.showDiffViewer(block.content, response.content, type, blockId);
+                    const response = await aiService.processText(inputText, type);
+                    // 传递selectedText以便在DiffViewer中显示选中的文字
+                    this.showDiffViewer(block.content, response.content, type, blockId, selectedText || '');
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : String(error);
                     if (errorMsg.includes('not configured')) {
@@ -256,6 +263,9 @@ export default class AIAssistantPlugin extends Plugin {
         this.currentSelectionStart = selectionStart ?? -1;
         this.currentSelectionEnd = selectionEnd ?? -1;
 
+        // 设置用于Diff显示的原文：优先使用选中文字，否则使用整个块内容
+        this.displayTextForDiff = (selectedText && selectedText.length > 0) ? selectedText : original;
+
         const container = document.createElement('div');
 
         this.currentDiffViewer = new DiffViewer({
@@ -263,7 +273,7 @@ export default class AIAssistantPlugin extends Plugin {
             props: {
                 original,
                 modified,
-                selectedText: selectedText || '',
+                selectedText: this.displayTextForDiff,  // 使用中间变量
                 operationType: operation,
                 blockId: blockId || ''
             }
@@ -423,11 +433,17 @@ ${instruction}
 
     private updateDiffViewer(modified: string, original?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) {
         if (this.currentDiffViewer) {
+            // 更新用于Diff显示的原文（使用中间变量）
+            // 只有当 selectedText 有实际内容时才更新，否则保持当前的 displayTextForDiff
+            if (selectedText !== undefined && selectedText.length > 0) {
+                this.displayTextForDiff = selectedText;
+            }
+            // 注意：如果 selectedText 为空或 undefined，不改变 displayTextForDiff，保持之前的值
+
             // 构建要更新的 props
             const updateProps: any = { modified };
-            if (selectedText !== undefined) {
-                updateProps.selectedText = selectedText;
-            }
+            // 始终更新 selectedText，使用当前保存的 displayTextForDiff
+            updateProps.selectedText = this.displayTextForDiff;
             if (original !== undefined) {
                 updateProps.original = original;
             }

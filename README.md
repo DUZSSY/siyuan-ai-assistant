@@ -152,6 +152,6 @@ MIT License
 
 If this plugin helps you, consider supporting the author to continue development and maintenance!
 
-[![Support](https://img.shields.io/badge/❤️-Support-red)](https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator)
+[![Support](https://img.shields.io/badge/❤️-Support-red)](https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc)
 
 Your support motivates me to keep improving the plugin! ❤️

@@ -11,8 +11,8 @@
   export let operationType: AIOperationType = 'polish';
   export let blockId: string = '';
   
-  // 用于显示的原文：优先使用 selectedText，如果没有则使用 original
-  $: displayOriginal = selectedText || original;
+  // 用于显示的原文：优先使用 selectedText（如果有实际内容），否则使用 original
+  $: displayOriginal = (selectedText && selectedText.length > 0) ? selectedText : original;
   
   $: isLoading = modified.startsWith('⏳') || modified === '' || modified === null || modified === undefined;
 

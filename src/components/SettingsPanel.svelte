@@ -223,7 +223,7 @@
   <div class="settings-header">
     <h2>⚙️ AI助手设置</h2>
     <div class="header-buttons">
-      <button class="btn-donate" on:click={() => window.open('https://www.yuque.com/g/duzssy/mop740/fm59mkeo86fx5mu9/collaborator/join?token=XSIhleBNwDXcARkx&source=doc_collaborator', '_blank')} title="打赏支持">❤️</button>
+      <button class="btn-donate" on:click={() => window.open('https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc', '_blank')} title="打赏支持">❤️</button>
       <button class="btn-close" on:click={onClose}>✕</button>
     </div>
   </div>
