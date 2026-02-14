@@ -1,0 +1,24 @@
+{
+  "name": "zhipu-ai-proxy",
+  "version": "1.0.0",
+  "description": "智谱 AI API 代理服务 - 仅供测试使用",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "zhipu",
+    "ai",
+    "proxy",
+    "glm-4-flash"
+  ],
+  "author": "DUZSSY",
+  "license": "MIT"
+}

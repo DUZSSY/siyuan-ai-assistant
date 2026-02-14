@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2026-02-14
+
+### ✨ Added
+- 浮动工具栏增加位置偏移功能，不再遮挡选中文本（偏移距离80px）
+- Floating toolbar offset feature added, no longer covers selected text (70px offset)
+- 浮动工具栏置顶功能优化：置顶后手动拖拽可更新固定位置
+- Floating toolbar pin feature optimized: dragging after pinning updates fixed position
+- 浮动工具栏置顶功能优化：Diff窗口关闭后自动恢复到固定位置或原位置
+- Floating toolbar: automatically restore position after Diff viewer closes
+- 设置中切换默认模型后，浮动工具栏（置顶状态）自动更新显示
+- Floating toolbar updates automatically when default provider changed in settings (even when pinned)
+
+### 🎨 Improved
+- 测试AI配置优化：隐藏API地址、API密钥，温度、最大Token等敏感/受限配置
+- Test AI settings optimization: hidden API URL, API key, temperature, maxTokens
+- 测试AI标识优化：通过ID前缀（test-ai-）识别，支持扩展多个测试AI
+- Test AI identification optimized: use ID prefix (test-ai-) for easy extension
+- 切换/编辑提供商时自动清除上次的测试连接状态
+- Clear test connection status when switching/editing providers
+
+### ⚠️ Important Notice
+- 测试AI免费额度有限，不保证可用性，仅支持glm-4-flash模型
+- Test AI has limited quota, availability not guaranteed, only glm-4-flash model supported
+
+### 📝 Changed
+- 搭建 API 中转服务（api-proxy/）供测试使用
+- Built API proxy service (api-proxy/) for testing
+- 版本号更新 (0.1.11 → 0.1.12)
+- Version bump (0.1.11 → 0.1.12)
+
+## [0.1.11] - 2026-02-14
+
+### ✨ Added
+- 搭建 API 中转服务（api-proxy/）供测试使用
+- Built API proxy service (api-proxy/) for testing
+- 新增 GLM 测试 AI 连接（免费试用）
+- Added GLM test AI connection (free trial)
+
+### ⚠️ Important Notice
+- 测试 AI 免费额度有限，不保证可用性
+- Test AI has limited quota, availability not guaranteed
+- 测试 AI 仅支持 glm-4-flash 模型，max_tokens 限制为 1000
+- Test AI only supports glm-4-flash model with max 1000 tokens
+
+### 📝 Changed
+- 更新测试 AI 名称为 "GLM（免费试用-额度有限-仅供测试）"
+- Updated test AI name to indicate limited quota (for testing only)
+- 版本号更新 (0.1.10 → 0.1.11)
+- Version bump (0.1.10 → 0.1.11)
+
 ## [0.1.10] - 2026-02-14
 
 ### 📝 Changed

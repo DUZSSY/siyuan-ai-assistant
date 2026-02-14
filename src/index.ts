@@ -235,6 +235,10 @@ export default class AIAssistantPlugin extends Plugin {
                 onClose: () => {
                     this.settingsDialog?.destroy();
                     this.settingsDialog = null;
+                },
+                onProviderChange: () => {
+                    // 提供商变更时更新浮动工具栏显示
+                    this.floatingToolbar?.updateToolbar();
                 }
             }
         });
@@ -336,12 +340,16 @@ export default class AIAssistantPlugin extends Plugin {
             
             this.diffDialog?.destroy();
             this.diffDialog = null;
+            // 应用修改后，恢复浮动工具栏的显示
+            this.floatingToolbar?.restoreVisibility();
         });
 
         this.currentDiffViewer.$on('cancel', () => {
             this.diffDialog?.destroy();
             this.diffDialog = null;
             this.currentDiffViewer = null;
+            // diff 窗口关闭后，恢复浮动工具栏的显示
+            this.floatingToolbar?.restoreVisibility();
         });
 
         // 重新生成请求

@@ -168,15 +168,16 @@ export class SettingsService {
     }
 
     private getDefaultSettings(): PluginSettings {
-        // 测试AI连接（默认）- 免费试用，无需API Key
+        // 测试AI连接（默认）- 免费试用，额度有限，仅供测试
+        // ID前缀为 test-ai- 用于识别测试AI
         const testProvider: AIProvider = {
-            id: 'test-ai-default',
-            name: '测试AI (免费试用)',
+            id: 'test-ai-glm',
+            name: 'GLM（免费试用-额度有限-仅供测试）',
             apiKey: '',
-            baseURL: 'https://ai-proxy-pied.vercel.app/v1',
+            baseURL: 'https://zproxy--yiizhao.replit.app/v1',
             model: 'glm-4-flash',
             temperature: 0.7,
-            maxTokens: 2048,
+            maxTokens: 1000,
             isDefault: true
         };
 

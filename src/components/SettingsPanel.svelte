@@ -7,6 +7,7 @@
 
   // Props
   export let onClose: () => void = () => {};
+  export let onProviderChange: () => void = () => {};
 
   // State
   let activeTab: 'providers' | 'ui' | 'prompts' | 'toolbar' = 'providers';
@@ -55,17 +56,26 @@
       maxTokens: 2048,
       isDefault: providers.length === 0
     };
+    testStatus = 'idle';  // 添加新提供商时清除测试状态
   }
 
   function startEditProvider(provider: AIProvider) {
     isAddingProvider = false;
     editingProvider = { ...provider };
+    testStatus = 'idle';  // 开始编辑时清除测试状态
   }
 
   function cancelEdit() {
     editingProvider = null;
     isAddingProvider = false;
     testStatus = 'idle';
+  }
+
+  // 判断是否为测试AI（测试AI不允许修改API地址、温度、最大Token）
+  // 通过ID前缀识别，支持多个测试AI（如 test-ai-glm, test-ai-claude 等）
+  function isTestAI(provider: AIProvider | null): boolean {
+    if (!provider) return false;
+    return provider.id.startsWith('test-ai-');
   }
 
   async function saveProvider() {
@@ -142,6 +152,9 @@
   async function setDefaultProvider(id: string) {
     await settingsService.setCurrentProvider(id);
     loadSettings();
+    testStatus = 'idle';  // 切换默认提供商时清除测试状态
+    // 通知外部提供商已变更
+    onProviderChange();
   }
 
   function applyTemplate(template: typeof DEFAULT_PROVIDER_TEMPLATES[0]) {
@@ -289,23 +302,26 @@
               />
             </div>
 
-            <div class="form-group">
-              <label>API地址 *</label>
-              <input 
-                type="text" 
-                bind:value={editingProvider.baseURL}
-                placeholder="http://localhost:11434/v1"
-              />
-            </div>
+            <!-- 测试AI隐藏API地址等配置 -->
+            {#if !isTestAI(editingProvider)}
+              <div class="form-group">
+                <label>API地址 *</label>
+                <input 
+                  type="text" 
+                  bind:value={editingProvider.baseURL}
+                  placeholder="http://localhost:11434/v1"
+                />
+              </div>
 
-            <div class="form-group">
-              <label>API密钥</label>
-              <input 
-                type="password" 
-                bind:value={editingProvider.apiKey}
-                placeholder="sk-..."
-              />
-            </div>
+              <div class="form-group">
+                <label>API密钥</label>
+                <input 
+                  type="password" 
+                  bind:value={editingProvider.apiKey}
+                  placeholder="sk-..."
+                />
+              </div>
+            {/if}
 
             <div class="form-group">
               <label>模型名称 *</label>
@@ -313,28 +329,31 @@
                 type="text" 
                 bind:value={editingProvider.model}
                 placeholder="llama3.2"
+                disabled={isTestAI(editingProvider)}
               />
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label>温度 (0-2)</label>
-                <input 
-                  type="number" 
-                  bind:value={editingProvider.temperature}
-                  min="0" max="2" step="0.1"
-                />
-              </div>
+            {#if !isTestAI(editingProvider)}
+              <div class="form-row">
+                <div class="form-group">
+                  <label>温度 (0-2)</label>
+                  <input 
+                    type="number" 
+                    bind:value={editingProvider.temperature}
+                    min="0" max="2" step="0.1"
+                  />
+                </div>
 
-              <div class="form-group">
-                <label>最大Token</label>
-                <input 
-                  type="number" 
-                  bind:value={editingProvider.maxTokens}
-                  min="100" max="8192"
-                />
+                <div class="form-group">
+                  <label>最大Token</label>
+                  <input 
+                    type="number" 
+                    bind:value={editingProvider.maxTokens}
+                    min="100" max="8192"
+                  />
+                </div>
               </div>
-            </div>
+            {/if}
 
             <!-- 测试结果显示 -->
             {#if testStatus === 'success'}
@@ -405,7 +424,11 @@
                       {/if}
                     </div>
                     <div class="provider-details">
-                      {provider.model} @ {provider.baseURL}
+                      {#if isTestAI(provider)}
+                        {provider.model}（测试AI）
+                      {:else}
+                        {provider.model} @ {provider.baseURL}
+                      {/if}
                     </div>
                   </div>
                   <div class="provider-actions">

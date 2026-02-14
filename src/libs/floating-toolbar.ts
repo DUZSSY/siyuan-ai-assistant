@@ -25,6 +25,8 @@ export class FloatingToolbar {
     private dragOffsetX = 0;
     private dragOffsetY = 0;
     private isPinned = false;
+    private pinnedPosition: { top: number; left: number } | null = null; // 固定时的位置
+    private lastSelectionPosition: { top: number; left: number; width: number; height: number } | null = null; // 上次选中文本位置
 
     // 事件处理器引用（用于正确移除监听器）
     private mouseUpHandler: ((e: MouseEvent) => void) | null = null;
@@ -183,8 +185,10 @@ export class FloatingToolbar {
 
         if (!this.toolbarElement) return;
 
-        // 如果已经固定，不要重新定位
-        if (this.isPinned) {
+        // 如果已经固定，显示在固定位置
+        if (this.isPinned && this.pinnedPosition) {
+            this.toolbarElement.style.top = `${this.pinnedPosition.top}px`;
+            this.toolbarElement.style.left = `${this.pinnedPosition.left}px`;
             this.toolbarElement.style.display = 'block';
             this.toolbarElement.classList.add('show');
             this.isVisible = true;
@@ -198,33 +202,53 @@ export class FloatingToolbar {
 
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
+        
+        // 保存选中文本位置
+        this.lastSelectionPosition = {
+            top: rect.top + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+            height: rect.height
+        };
 
         const toolbarHeight = this.toolbarElement.offsetHeight || 50;
         const toolbarWidth = this.toolbarElement.offsetWidth || 300;
+        
+        // 增加偏移距离，确保不遮挡选中文本
+        const offsetDistance = 80; // 与选中文本的间距（增大以确保完全可见）
 
         // 计算位置：优先显示在选中文本上方，如果不合适则显示在下方
-        let top = rect.top - toolbarHeight - 10;
+        let top = rect.top - toolbarHeight - offsetDistance;
         let left = rect.left + (rect.width / 2) - (toolbarWidth / 2);
 
         // 确保不超出视口边界
-        if (top < 10) {
-            top = rect.bottom + 15; // 显示在选中文本下方，增加间距避免覆盖
+        if (top < offsetDistance) {
+            top = rect.bottom + offsetDistance; // 显示在选中文本下方
         }
         
         // 水平居中，但确保不超出边界
-        if (left < 10) {
-            left = 10;
+        if (left < offsetDistance) {
+            left = offsetDistance;
         }
-        if (left + toolbarWidth > window.innerWidth - 10) {
-            left = window.innerWidth - toolbarWidth - 10;
+        if (left + toolbarWidth > window.innerWidth - offsetDistance) {
+            left = window.innerWidth - toolbarWidth - offsetDistance;
         }
 
-        // 如果下方也不够空间，尝试显示在右侧
-        if (top + toolbarHeight > window.innerHeight - 10 && top > rect.bottom + 10) {
-            top = rect.top;
-            left = rect.right + 10;
-            if (left + toolbarWidth > window.innerWidth - 10) {
-                left = rect.left - toolbarWidth - 10;
+        // 如果下方也不够空间，尝试显示在右侧或左侧
+        if (top + toolbarHeight > window.innerHeight - offsetDistance) {
+            // 尝试右侧
+            if (rect.right + toolbarWidth + offsetDistance < window.innerWidth - offsetDistance) {
+                top = rect.top;
+                left = rect.right + offsetDistance;
+            } 
+            // 尝试左侧
+            else if (rect.left - toolbarWidth - offsetDistance > offsetDistance) {
+                top = rect.top;
+                left = rect.left - toolbarWidth - offsetDistance;
+            }
+            // 实在不行就放在视口底部
+            else {
+                top = window.innerHeight - toolbarHeight - offsetDistance;
             }
         }
 
@@ -259,7 +283,8 @@ export class FloatingToolbar {
     }
     
     /**
-     * 强制隐藏（即使已固定）- 用于关闭按钮或操作完成后
+     * 强制隐藏（但保留固定状态）- 用于关闭按钮或操作完成后
+     * 注意：不再自动取消固定状态，固定状态通过点击按钮手动切换
      */
     public forceHide(): void {
         if (!this.toolbarElement || !this.isVisible) return;
@@ -267,7 +292,7 @@ export class FloatingToolbar {
         this.toolbarElement.classList.remove('show');
         this.toolbarElement.style.display = 'none';
         this.isVisible = false;
-        this.isPinned = false; // 取消固定状态
+        // 不再自动取消固定状态，保留 pinnedPosition
         this.currentSelection = '';
         this.currentBlockId = null;
         this.currentSelectionStart = -1;
@@ -337,6 +362,14 @@ export class FloatingToolbar {
                 buttonsContainer.appendChild(btn);
             });
         }
+    }
+
+    /**
+     * 更新工具栏显示（当默认提供商变更时调用）
+     * 即使工具栏隐藏也会更新内部状态
+     */
+    public updateToolbar(): void {
+        this.refreshToolbar();
     }
 
     private createModelDropdown(): void {
@@ -493,18 +526,40 @@ export class FloatingToolbar {
             pinBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.isPinned = !this.isPinned;
-                pinBtn.style.opacity = this.isPinned ? '1' : '0.6';
-                pinBtn.textContent = this.isPinned ? '📍' : '📌';
-                pinBtn.title = this.isPinned ? '已固定，点击取消固定' : '固定位置';
+                
+                if (this.isPinned && this.toolbarElement) {
+                    // 保存当前位置
+                    const currentTop = parseInt(this.toolbarElement.style.top || '0');
+                    const currentLeft = parseInt(this.toolbarElement.style.left || '0');
+                    this.pinnedPosition = { top: currentTop, left: currentLeft };
+                    pinBtn.style.opacity = '1';
+                    pinBtn.textContent = '📍';
+                    pinBtn.title = '已固定，点击取消固定';
+                } else {
+                    // 取消固定
+                    this.pinnedPosition = null;
+                    pinBtn.style.opacity = '0.6';
+                    pinBtn.textContent = '📌';
+                    pinBtn.title = '固定位置';
+                }
             });
         }
         
-        // 关闭按钮
+        // 关闭按钮 - 关闭并取消固定
         const closeBtn = header.querySelector('.btn-close') as HTMLElement;
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                this.isPinned = false;  // 关闭时取消固定
+                this.pinnedPosition = null;
                 this.forceHide();
+                // 恢复pin按钮状态
+                const pinBtn = header.querySelector('.btn-pin') as HTMLElement;
+                if (pinBtn) {
+                    pinBtn.style.opacity = '0.6';
+                    pinBtn.textContent = '📌';
+                    pinBtn.title = '固定位置';
+                }
             });
         }
         
@@ -558,6 +613,13 @@ export class FloatingToolbar {
                 this.isDragging = false;
                 if (this.toolbarElement) {
                     this.toolbarElement.style.cursor = 'default';
+                    // 如果已置顶，拖拽结束后更新固定位置
+                    if (this.isPinned) {
+                        this.pinnedPosition = {
+                            top: parseInt(this.toolbarElement.style.top || '0'),
+                            left: parseInt(this.toolbarElement.style.left || '0')
+                        };
+                    }
                 }
             }
         };
@@ -724,6 +786,59 @@ export class FloatingToolbar {
 
     public getCurrentBlockId(): string | null {
         return this.currentBlockId;
+    }
+
+    /**
+     * 恢复显示浮动工具栏（用于 diff 窗口关闭后）
+     * 如果有固定位置则显示在固定位置，否则显示在最后选中的位置
+     */
+    public restoreVisibility(): void {
+        if (!this.toolbarElement) {
+            this.createToolbar();
+        }
+        
+        if (!this.toolbarElement) return;
+
+        // 如果已固定，显示在固定位置
+        if (this.isPinned && this.pinnedPosition) {
+            this.toolbarElement.style.top = `${this.pinnedPosition.top}px`;
+            this.toolbarElement.style.left = `${this.pinnedPosition.left}px`;
+            this.toolbarElement.style.display = 'block';
+            this.toolbarElement.classList.add('show');
+            this.isVisible = true;
+            return;
+        }
+
+        // 如果有保存的选中文本位置，恢复到该位置附近
+        if (this.lastSelectionPosition) {
+            const toolbarHeight = this.toolbarElement.offsetHeight || 50;
+            const toolbarWidth = this.toolbarElement.offsetWidth || 300;
+            const offsetDistance = 80;
+            
+            const pos = this.lastSelectionPosition;
+            
+            // 计算位置：优先在上方
+            let top = pos.top - toolbarHeight - offsetDistance;
+            let left = pos.left + (pos.width / 2) - (toolbarWidth / 2);
+
+            // 确保不超出边界
+            if (top < offsetDistance) {
+                top = pos.top + pos.height + offsetDistance;
+            }
+            if (left < offsetDistance) {
+                left = offsetDistance;
+            }
+            if (left + toolbarWidth > window.innerWidth - offsetDistance) {
+                left = window.innerWidth - toolbarWidth - offsetDistance;
+            }
+
+            this.toolbarElement.style.top = `${top}px`;
+            this.toolbarElement.style.left = `${left}px`;
+            this.toolbarElement.style.display = 'block';
+            this.toolbarElement.classList.add('show');
+            this.isVisible = true;
+            this.resetHideTimeout();
+        }
     }
 
     destroy(): void {
