@@ -4,14 +4,17 @@ import { settingsService } from '../services/settings';
 export interface ContextMenuOptions {
     onOperation: (type: AIOperationType, blockId: string) => void;
     onOpenSettings: () => void;
+    i18n?: Record<string, any>;
 }
 
 export class ContextMenuManager {
     private options: ContextMenuOptions;
     private menuElement: HTMLElement | null = null;
+    private i18n: Record<string, any>;
 
     constructor(options: ContextMenuOptions) {
         this.options = options;
+        this.i18n = options.i18n || {};
     }
 
     /**
@@ -40,32 +43,32 @@ export class ContextMenuManager {
         // Add AI submenu
         const aiSubmenu = [
             {
-                label: '✨ 润色文本',
+                label: `✨ ${this.i18n.operations?.polish || '润色'}`,
                 click: () => this.options.onOperation('polish', blockId)
             },
             {
-                label: '🌐 翻译文本',
+                label: `🌐 ${this.i18n.operations?.translate || '翻译'}`,
                 click: () => this.options.onOperation('translate', blockId)
             },
             {
-                label: '📝 总结内容',
+                label: `📝 ${this.i18n.operations?.summarize || '总结'}`,
                 click: () => this.options.onOperation('summarize', blockId)
             },
             {
-                label: '📖 扩写内容',
+                label: `📖 ${this.i18n.operations?.expand || '扩写'}`,
                 click: () => this.options.onOperation('expand', blockId)
             },
             {
                 type: 'separator'
             },
             {
-                label: '⚙️ AI助手设置',
+                label: `⚙️ ${this.i18n.settings?.title || 'AI助手设置'}`,
                 click: () => this.options.onOpenSettings()
             }
         ];
 
         menu.addItem({
-            label: '🤖 AI助手',
+            label: `🤖 ${this.i18n.title || 'AI助手'}`,
             submenu: aiSubmenu
         });
     }
@@ -97,10 +100,10 @@ export class ContextMenuManager {
         `;
 
         const items = [
-            { label: '✨ 润色', action: callbacks.onPolish },
-            { label: '🌐 翻译', action: callbacks.onTranslate },
-            { label: '📝 总结', action: callbacks.onSummarize },
-            { label: '📖 扩写', action: callbacks.onExpand }
+            { label: `✨ ${this.i18n.operations?.polish || '润色'}`, action: callbacks.onPolish },
+            { label: `🌐 ${this.i18n.operations?.translate || '翻译'}`, action: callbacks.onTranslate },
+            { label: `📝 ${this.i18n.operations?.summarize || '总结'}`, action: callbacks.onSummarize },
+            { label: `📖 ${this.i18n.operations?.expand || '扩写'}`, action: callbacks.onExpand }
         ];
 
         items.forEach(item => {

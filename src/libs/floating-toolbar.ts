@@ -7,6 +7,7 @@ export interface FloatingToolbarOptions {
     onOperation: (type: AIOperationType, originalText: string, modifiedText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
     onOperationStart: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
     onOpenSettings: () => void;
+    i18n?: Record<string, any>;
 }
 
 export class FloatingToolbar {
@@ -36,8 +37,11 @@ export class FloatingToolbar {
     private mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
     private globalMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
+    private i18n: Record<string, any>;
+
     constructor(options: FloatingToolbarOptions) {
         this.options = options;
+        this.i18n = options.i18n || {};
         this.bindEvents();
     }
 
@@ -325,7 +329,7 @@ export class FloatingToolbar {
         if (providerNameEl) {
             providerNameEl.textContent = provider
                 ? `${provider.name} : ${provider.model}`
-                : '⚠️ 未配置';
+                : `⚠️ ${this.i18n.messages?.noProvider || '未配置'}`;
         }
 
         const buttonsContainer = this.toolbarElement.querySelector('.toolbar-buttons');
@@ -333,13 +337,13 @@ export class FloatingToolbar {
             buttonsContainer.innerHTML = '';
 
             const actions: { type: AIOperationType; label: string; icon: string; enabled: boolean }[] = [
-                { type: 'polish', label: '润色', icon: '✨', enabled: buttons.polish },
-                { type: 'translate', label: '翻译', icon: '🌐', enabled: buttons.translate },
-                { type: 'summarize', label: '总结', icon: '📝', enabled: buttons.summarize },
-                { type: 'expand', label: '扩写', icon: '📖', enabled: buttons.expand },
-                { type: 'condense', label: '精简', icon: '📄', enabled: buttons.condense },
-                { type: 'rewrite', label: '改写', icon: '🔄', enabled: buttons.rewrite },
-                { type: 'continue', label: '续写', icon: '➡️', enabled: buttons.continue }
+                { type: 'polish', label: this.i18n.operations?.polish || '润色', icon: '✨', enabled: buttons.polish },
+                { type: 'translate', label: this.i18n.operations?.translate || '翻译', icon: '🌐', enabled: buttons.translate },
+                { type: 'summarize', label: this.i18n.operations?.summarize || '总结', icon: '📝', enabled: buttons.summarize },
+                { type: 'expand', label: this.i18n.operations?.expand || '扩写', icon: '📖', enabled: buttons.expand },
+                { type: 'condense', label: this.i18n.operations?.condense || '精简', icon: '📄', enabled: buttons.condense },
+                { type: 'rewrite', label: this.i18n.operations?.rewrite || '改写', icon: '🔄', enabled: buttons.rewrite },
+                { type: 'continue', label: this.i18n.operations?.continue || '续写', icon: '➡️', enabled: buttons.continue }
             ];
 
             settings.customButtons.forEach((btn, index) => {
@@ -491,17 +495,17 @@ export class FloatingToolbar {
         const provider = settingsService.getCurrentProvider();
         const providerInfo = provider
             ? `${provider.name} : ${provider.model}`
-            : '⚠️ 未配置';
+            : `⚠️ ${this.i18n.messages?.noProvider || '未配置'}`;
             
         const header = document.createElement('div');
         header.className = 'toolbar-header';
         header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--b3-border-color, #e0e0e0); cursor: move;';
         header.innerHTML = `
             <span class="drag-handle" style="cursor: move; padding: 2px 4px; margin-right: 4px; color: var(--b3-theme-on-surface, #999);">⋮⋮</span>
-            <span class="provider-name" style="cursor: pointer; font-weight: 500; font-size: 12px; color: var(--b3-theme-on-surface, #666); flex: 1;" title="点击切换模型">${providerInfo}</span>
-            <button class="btn-pin" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-right: 4px; opacity: 0.6;" title="固定位置">📌</button>
-            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 6px;" title="设置">⚙️</button>
-            <button class="btn-close" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-left: 4px; color: var(--b3-theme-on-surface, #999);" title="关闭">✕</button>
+            <span class="provider-name" style="cursor: pointer; font-weight: 500; font-size: 12px; color: var(--b3-theme-on-surface, #666); flex: 1;" title="${this.i18n.toolbar?.switchModel || '点击切换模型'}">${providerInfo}</span>
+            <button class="btn-pin" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-right: 4px; opacity: 0.6;" title="${this.i18n.toolbar?.pin || '固定位置'}">📌</button>
+            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 6px;" title="${this.i18n.settings || '设置'}">⚙️</button>
+            <button class="btn-close" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-left: 4px; color: var(--b3-theme-on-surface, #999);" title="${this.i18n.close || '关闭'}">✕</button>
         `;
         
         // 拖拽功能
@@ -534,13 +538,13 @@ export class FloatingToolbar {
                     this.pinnedPosition = { top: currentTop, left: currentLeft };
                     pinBtn.style.opacity = '1';
                     pinBtn.textContent = '📍';
-                    pinBtn.title = '已固定，点击取消固定';
+                    pinBtn.title = this.i18n.toolbar?.pinned || '已固定，点击取消固定';
                 } else {
                     // 取消固定
                     this.pinnedPosition = null;
                     pinBtn.style.opacity = '0.6';
                     pinBtn.textContent = '📌';
-                    pinBtn.title = '固定位置';
+                    pinBtn.title = this.i18n.toolbar?.pin || '固定位置';
                 }
             });
         }
@@ -558,7 +562,7 @@ export class FloatingToolbar {
                 if (pinBtn) {
                     pinBtn.style.opacity = '0.6';
                     pinBtn.textContent = '📌';
-                    pinBtn.title = '固定位置';
+                    pinBtn.title = this.i18n.toolbar?.pin || '固定位置';
                 }
             });
         }
@@ -647,7 +651,7 @@ export class FloatingToolbar {
             if (currentProvider) {
                 aiService.setProvider(currentProvider);
             } else {
-                alert('AI 提供商未配置，请先点击设置进行配置');
+                alert(this.i18n.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
                 this.options.onOpenSettings();
                 return;
             }
@@ -728,7 +732,7 @@ export class FloatingToolbar {
                 );
             }
         } catch (error) {
-            alert('操作失败，请检查AI提供商配置');
+            alert(this.i18n.messages?.error || '操作失败，请检查AI提供商配置');
         } finally {
             this.setLoading(false);
             this.hide();

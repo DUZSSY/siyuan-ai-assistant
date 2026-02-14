@@ -142,7 +142,8 @@ export default class AIAssistantPlugin extends Plugin {
         const chatPanel = new ChatPanel({
             target: element,
             props: {
-                onOpenSettings: () => this.openSettings()
+                onOpenSettings: () => this.openSettings(),
+                i18n: this.i18n
             }
         });
 
@@ -160,11 +161,12 @@ export default class AIAssistantPlugin extends Plugin {
                 this.floatingToolbar?.forceHide();
             },
             onOperationStart: (type, original, blockId, selectedText, selectionStart, selectionEnd) => {
-                this.showDiffViewer(original, '⏳ 正在请求AI处理...', type, blockId, selectedText, selectionStart, selectionEnd);
+                this.showDiffViewer(original, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), type, blockId, selectedText, selectionStart, selectionEnd);
                 // 开始操作时隐藏浮动工具栏
                 this.floatingToolbar?.forceHide();
             },
-            onOpenSettings: () => this.openSettings()
+            onOpenSettings: () => this.openSettings(),
+            i18n: this.i18n
         });
     }
 
@@ -185,7 +187,7 @@ export default class AIAssistantPlugin extends Plugin {
             onOperation: async (type, blockId) => {
                 // 确保 AI 提供商已配置
                 if (!await this.ensureProviderConfigured()) {
-                    alert('AI 提供商未配置，请先点击设置进行配置');
+                    alert(this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
                     this.openSettings();
                     return;
                 }
@@ -205,13 +207,14 @@ export default class AIAssistantPlugin extends Plugin {
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : String(error);
                     if (errorMsg.includes('not configured')) {
-                        alert('AI 提供商未配置，请先点击设置进行配置');
+                        alert(this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
                     } else {
-                        alert(`操作失败: ${errorMsg}`);
+                        alert((this.i18n?.messages?.error || '操作失败') + ': ' + errorMsg);
                     }
                 }
             },
-            onOpenSettings: () => this.openSettings()
+            onOpenSettings: () => this.openSettings(),
+            i18n: this.i18n
         });
 
         // Listen for block icon clicks
@@ -239,12 +242,13 @@ export default class AIAssistantPlugin extends Plugin {
                 onProviderChange: () => {
                     // 提供商变更时更新浮动工具栏显示
                     this.floatingToolbar?.updateToolbar();
-                }
+                },
+                i18n: this.i18n
             }
         });
 
         this.settingsDialog = showDialog({
-            title: 'AI助手设置',
+            title: '',
             content: container,
             width: '600px',
             height: '500px',
@@ -279,7 +283,8 @@ export default class AIAssistantPlugin extends Plugin {
                 modified,
                 selectedText: this.displayTextForDiff,  // 使用中间变量
                 operationType: operation,
-                blockId: blockId || ''
+                blockId: blockId || '',
+                i18n: this.i18n
             }
         });
 

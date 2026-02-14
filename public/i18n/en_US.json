@@ -5,7 +5,94 @@
   "cancel": "Cancel",
   "save": "Save",
   "close": "Close",
-  "settings": "Settings",
+  "confirm": "Confirm",
+  "providerNames": {
+    "ollama": "Ollama (Local)",
+    "openai": "OpenAI",
+    "deepseek": "DeepSeek",
+    "moonshot": "Moonshot",
+    "zhipu": "Zhipu AI (Z.ai)",
+    "claude": "Claude (Anthropic)",
+    "customOpenAI": "Custom OpenAI Format",
+    "testGLM": "GLM (Free Trial - Limited - For Testing Only)"
+  },
+  "customButtons": {
+    "custom1": "Custom 1",
+    "custom2": "Custom 2",
+    "custom3": "Custom 3"
+  },
+  "settings": {
+    "title": "AI Assistant Settings"
+  },
+  "settingsPanel": {
+    "title": "AI Assistant Settings",
+    "tabs": {
+      "providers": "AI Providers",
+      "toolbar": "Toolbar",
+      "ui": "UI Settings",
+      "prompts": "Custom Prompts"
+    },
+    "providers": {
+      "addNew": "Add Provider",
+      "edit": "Edit Provider",
+      "quickTemplate": "Quick Template:",
+      "name": "Name *",
+      "namePlaceholder": "e.g., Ollama Local",
+      "apiAddress": "API URL *",
+      "apiAddressPlaceholder": "http://localhost:11434/v1",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "sk-...",
+      "modelName": "Model Name *",
+      "modelPlaceholder": "llama3.2",
+      "temperature": "Temperature (0-2)",
+      "maxTokens": "Max Tokens",
+      "testSuccess": "Connection Successful",
+      "testFailed": "Connection Failed",
+      "testing": "Testing...",
+      "testConnection": "Test Connection",
+      "cancel": "Cancel",
+      "save": "Save",
+      "testRequired": "Please click \"Test Connection\" button first, save only allowed after test passes",
+      "configuredProviders": "Configured Providers",
+      "noProviders": "No configured AI providers",
+      "addFirst": "Add First Provider",
+      "setAsDefault": "Set as Default",
+      "testAI": "Test AI"
+    },
+    "toolbar": {
+      "buttons": "Floating Toolbar Buttons",
+      "selectButtons": "Select which buttons to show in floating toolbar",
+      "customButtons": "Custom Buttons",
+      "customSync": "Auto-synced from \"Custom Prompts\" tab after configuration"
+    },
+    "ui": {
+      "title": "UI Settings",
+      "notSupported": "UI customization not supported in MVP version"
+    },
+    "prompts": {
+      "title": "Custom Button Configuration",
+      "desc": "Configure three custom operation buttons (auto-sync to toolbar after enabled)",
+      "button": "Custom Button",
+      "buttonNumber": "Custom Button {n}",
+      "enable": "Enable this button",
+      "buttonName": "Button Name",
+      "buttonNamePlaceholder": "Button display name",
+      "icon": "Icon (emoji)",
+      "iconPlaceholder": "✨",
+      "prompt": "AI Prompt",
+      "promptPlaceholder": "Enter AI prompt, e.g., Convert the following content to table format:"
+    },
+    "alerts": {
+      "fillRequired": "Please fill in all required fields",
+      "confirmDelete": "Are you sure you want to delete this provider?",
+      "customSaved": "Custom button configuration saved",
+      "toolbarSaved": "Toolbar configuration saved",
+      "autoSaved": "Auto saved",
+      "testEmptyResponse": "AI returned empty content",
+      "connectionFailed": "Connection failed"
+    },
+    "donate": "Support with Donation"
+  },
   "providers": {
     "title": "AI Providers",
     "add": "Add Provider",
@@ -45,24 +132,59 @@
     "title": "Diff View",
     "original": "Original",
     "modified": "Modified",
+    "modifiedEditing": "Modified (Editing)",
     "accept": "Accept",
     "reject": "Reject",
     "acceptAll": "Accept All",
     "rejectAll": "Reject All",
     "apply": "Apply Changes",
     "unchanged": "Unchanged",
-    "modified": "Modified"
+    "modified": "Modified",
+    "insert": "Inserted",
+    "delete": "Deleted",
+    "notConfigured": "Not Configured",
+    "cancelEdit": "Cancel Edit",
+    "directEdit": "Direct Edit",
+    "regenerate": "Regenerate",
+    "applyChanges": "Apply Changes",
+    "cancel": "Cancel",
+    "regenerateTitle": "Regenerate - Adjust results based on your requirements",
+    "regenerateHint": "💡 Enter your requirements, AI will adjust based on the original and current results. For example: \"Make it more concise\", \"Add more technical details\", \"More formal tone\", etc.",
+    "regeneratePlaceholder": "Enter your modification requirements...",
+    "sendRequest": "Send Request",
+    "processing": "Processing...",
+    "editPlaceholder": "Edit the modified content here...",
+    "save": "Save",
+    "modificationCount": "{count} modifications"
+  },
+  "toolbar": {
+    "pin": "Pin toolbar",
+    "pinned": "Pinned, click to unpin",
+    "switchModel": "Click to switch model"
   },
   "chat": {
     "placeholder": "Type a message... (Enter to send, Shift+Enter for new line)",
     "newChat": "New Chat",
     "history": "History",
     "noHistory": "No conversation history",
+    "welcome": "Select text and use quick actions, or start chatting directly",
+    "deleteConfirm": "Are you sure you want to delete this conversation?",
+    "testPrompt": "Hello, this is a test",
+    "systemPrompt": "You are a helpful AI assistant.",
     "quickActions": {
       "polish": "Polish",
       "translate": "Translate",
       "summarize": "Summarize",
       "expand": "Expand"
     }
+  },
+  "defaultPrompts": {
+    "polish": "Please polish the following text to make it more fluent and professional. Strict requirements: 1. Keep the original meaning unchanged; 2. Only output the polished text, do not include any explanations or introductions; 3. Do not add any extra content:",
+    "translate": "Please translate the following text into the target language. Strict rules: 1. If the text is Chinese, translate to English; 2. If the text is English or other language, translate to Chinese; 3. Must only output the translation, prohibit outputting the original text; 4. Keep the original meaning and professional terms accurate; 5. Do not add any explanations, introductions, or extra content:",
+    "summarize": "Please extract the core points of the following text. Strict requirements: 1. Summarize key information in 3-5 sentences; 2. Only output the summary; 3. Do not add any explanations or extra content:",
+    "expand": "Please expand on the following content. Strict rules: 1. Add relevant details and explanations; 2. Make the content richer and more complete; 3. Keep the same topic; 4. Only output the expanded content; 5. Do not add any explanations or extra content:",
+    "condense": "Please condense the following text. Strict rules: 1. Remove redundant descriptions and repetitive information; 2. Keep core viewpoints and key data; 3. Only output the condensed content; 4. Do not add any explanations or extra content:",
+    "rewrite": "Please rewrite the following text. Strict rules: 1. Adjust to formal written style suitable for academic or business scenarios; 2. Keep the original meaning; 3. Only output the rewritten content; 4. Do not add any explanations or extra content:",
+    "continue": "Please continue writing the following text. Strict rules: 1. Keep consistent style and theme; 2. Logical coherence; 3. Only output the continuation; 4. Do not add any explanations or extra content:"
   }
 }

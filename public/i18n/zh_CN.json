@@ -5,7 +5,94 @@
   "cancel": "取消",
   "save": "保存",
   "close": "关闭",
-  "settings": "设置",
+  "confirm": "确定",
+  "providerNames": {
+    "ollama": "Ollama (本地)",
+    "openai": "OpenAI",
+    "deepseek": "DeepSeek",
+    "moonshot": "Moonshot",
+    "zhipu": "智谱AI (Z.ai)",
+    "claude": "Claude (Anthropic)",
+    "customOpenAI": "自定义 OpenAI 格式",
+    "testGLM": "GLM（免费试用-额度有限-仅供测试）"
+  },
+  "customButtons": {
+    "custom1": "自定义1",
+    "custom2": "自定义2",
+    "custom3": "自定义3"
+  },
+  "settings": {
+    "title": "AI助手设置"
+  },
+  "settingsPanel": {
+    "title": "AI助手设置",
+    "tabs": {
+      "providers": "AI提供商",
+      "toolbar": "工具栏",
+      "ui": "界面设置",
+      "prompts": "自定义提示词"
+    },
+    "providers": {
+      "addNew": "添加提供商",
+      "edit": "编辑提供商",
+      "quickTemplate": "快速模板：",
+      "name": "名称 *",
+      "namePlaceholder": "例如：Ollama本地",
+      "apiAddress": "API地址 *",
+      "apiAddressPlaceholder": "http://localhost:11434/v1",
+      "apiKey": "API密钥",
+      "apiKeyPlaceholder": "sk-...",
+      "modelName": "模型名称 *",
+      "modelPlaceholder": "llama3.2",
+      "temperature": "温度 (0-2)",
+      "maxTokens": "最大Token",
+      "testSuccess": "连接成功",
+      "testFailed": "连接失败",
+      "testing": "测试中...",
+      "testConnection": "测试连接",
+      "cancel": "取消",
+      "save": "保存",
+      "testRequired": "请先点击\"测试连接\"按钮，测试通过后才能保存",
+      "configuredProviders": "已配置的提供商",
+      "noProviders": "暂无配置的AI提供商",
+      "addFirst": "添加第一个提供商",
+      "setAsDefault": "设为默认",
+      "testAI": "测试AI"
+    },
+    "toolbar": {
+      "buttons": "浮动工具栏按钮",
+      "selectButtons": "选择在浮动工具栏中显示哪些按钮",
+      "customButtons": "自定义按钮",
+      "customSync": "在\"自定义提示词\"Tab中配置后会自动同步到这里"
+    },
+    "ui": {
+      "title": "界面设置",
+      "notSupported": "MVP版本暂不支持界面自定义"
+    },
+    "prompts": {
+      "title": "自定义按钮配置",
+      "desc": "配置三个自定义操作按钮（启用后会自动同步到工具栏）",
+      "button": "自定义按钮",
+      "buttonNumber": "自定义按钮 {n}",
+      "enable": "启用此按钮",
+      "buttonName": "按钮名称",
+      "buttonNamePlaceholder": "按钮显示名称",
+      "icon": "图标 (emoji)",
+      "iconPlaceholder": "✨",
+      "prompt": "AI提示词",
+      "promptPlaceholder": "输入AI提示词，例如：请将以下内容转换成表格形式："
+    },
+    "alerts": {
+      "fillRequired": "请填写所有必填字段",
+      "confirmDelete": "确定要删除这个提供商吗？",
+      "customSaved": "自定义按钮配置已保存",
+      "toolbarSaved": "工具栏配置已保存",
+      "autoSaved": "已自动保存",
+      "testEmptyResponse": "AI返回空内容",
+      "connectionFailed": "连接失败"
+    },
+    "donate": "打赏支持"
+  },
   "providers": {
     "title": "AI提供商",
     "add": "添加提供商",
@@ -45,24 +132,59 @@
     "title": "差异对比",
     "original": "原文",
     "modified": "修改后",
+    "modifiedEditing": "修改后（编辑模式）",
     "accept": "接受",
     "reject": "拒绝",
     "acceptAll": "全部接受",
     "rejectAll": "全部拒绝",
     "apply": "应用修改",
     "unchanged": "未变",
-    "modified": "修改"
+    "modified": "修改",
+    "insert": "新增",
+    "delete": "删除",
+    "notConfigured": "未配置",
+    "cancelEdit": "取消编辑",
+    "directEdit": "直接编辑",
+    "regenerate": "重新生成",
+    "applyChanges": "应用修改",
+    "cancel": "取消",
+    "regenerateTitle": "重新生成 - 根据您的要求调整结果",
+    "regenerateHint": "💡 输入您的要求，AI将基于原文和当前结果进行调整。例如：\"请更简洁一些\"、\"增加更多技术细节\"、\"语气更正式\"等。",
+    "regeneratePlaceholder": "请输入您的修改要求...",
+    "sendRequest": "发送请求",
+    "processing": "处理中...",
+    "editPlaceholder": "在此直接编辑修改后的内容...",
+    "save": "保存",
+    "modificationCount": "共 {count} 处修改"
+  },
+  "toolbar": {
+    "pin": "固定位置",
+    "pinned": "已固定，点击取消固定",
+    "switchModel": "点击切换模型"
   },
   "chat": {
     "placeholder": "输入消息... (Enter发送, Shift+Enter换行)",
     "newChat": "新对话",
     "history": "历史记录",
     "noHistory": "暂无历史对话",
+    "welcome": "选择文本并使用快捷操作，或直接开始对话",
+    "deleteConfirm": "确定要删除这个对话吗？",
+    "testPrompt": "你好，这是测试",
+    "systemPrompt": "你是一个有帮助的AI助手。",
     "quickActions": {
       "polish": "润色",
       "translate": "翻译",
       "summarize": "总结",
       "expand": "扩写"
     }
+  },
+  "defaultPrompts": {
+    "polish": "请润色以下文本，优化表达使其更流畅、专业。严格要求：1.保持原意不变；2.仅输出润色后的文本，不要有任何解释或前言；3.不要添加任何额外内容：",
+    "translate": "请将以下文本翻译成目标语言。严格规则：1.如果文本是中文，翻译成英文；2.如果文本是英文或其他语言，翻译成中文；3.必须只输出翻译结果，禁止输出原文；4.保持原意和专业术语准确；5.不要添加任何解释、前言或额外内容：",
+    "summarize": "请提炼以下文本的核心要点。严格要求：1.用3-5句话概括关键信息；2.只输出总结内容；3.不要添加任何解释或额外内容：",
+    "expand": "请基于以下内容进行扩展。严格规则：1.增加相关细节和解释；2.使内容更丰富完整；3.保持主题一致；4.只输出扩展后的内容；5.不要添加任何解释或额外内容：",
+    "condense": "请精简以下文本。严格规则：1.去除冗余描述和重复信息；2.保留核心观点和关键数据；3.只输出精简后的内容；4.不要添加任何解释或额外内容：",
+    "rewrite": "请改写以下文本。严格规则：1.调整为正式书面语风格，适用于学术或商务场景；2.保持原意；3.只输出改写后的内容；4.不要添加任何解释或额外内容：",
+    "continue": "请延续以下文本续写后续内容。严格规则：1.保持风格和主题一致；2.逻辑连贯；3.只输出续写内容；4.不要添加任何解释或额外内容："
   }
 }

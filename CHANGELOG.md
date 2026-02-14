@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.13] - 2026-02-15
+
+### 🐛 Fixed
+- Fixed i18n issue: plugin now correctly displays in English/Chinese based on SiYuan Note's language settings
+- Fixed floating toolbar button text, context menu items, chat panel, diff viewer, and settings panel all support internationalization
+- Fixed toolbar tooltips, alerts, and dialog titles now use i18n properly
+
+### 📝 Changed
+- Version bump (0.1.12 → 0.1.13)
+
 ## [0.1.12] - 2026-02-14
 
 ### ✨ Added

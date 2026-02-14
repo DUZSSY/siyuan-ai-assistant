@@ -8,6 +8,7 @@
 
   // Props
   export let onOpenSettings: () => void = () => {};
+  export let i18n: Record<string, any> = {};
 
   // State
   let messages: ConversationMessage[] = [];
@@ -19,11 +20,11 @@
   let messagesContainer: HTMLDivElement;
 
   // Quick actions
-  const quickActions: { type: AIOperationType; label: string; icon: string }[] = [
-    { type: 'polish', label: '润色', icon: '✨' },
-    { type: 'translate', label: '翻译', icon: '🌐' },
-    { type: 'summarize', label: '总结', icon: '📝' },
-    { type: 'expand', label: '扩写', icon: '📖' }
+  $: quickActions = [
+  { type: 'polish' as AIOperationType, label: i18n.chat?.quickActions?.polish || i18n.operations?.polish || 'Polish', icon: '✨' },
+  { type: 'translate' as AIOperationType, label: i18n.chat?.quickActions?.translate || i18n.operations?.translate || 'Translate', icon: '🌐' },
+  { type: 'summarize' as AIOperationType, label: i18n.chat?.quickActions?.summarize || i18n.operations?.summarize || 'Summarize', icon: '📝' },
+  { type: 'expand' as AIOperationType, label: i18n.chat?.quickActions?.expand || i18n.operations?.expand || 'Expand', icon: '📖' }
   ];
 
   onMount(() => {
@@ -96,7 +97,7 @@
       messages = [...messages, {
         id: generateId(),
         role: 'assistant',
-        content: '抱歉，处理请求时出错。请检查AI提供商配置。',
+        content: i18n.messages?.error || 'Processing failed, please check configuration',
         timestamp: Date.now()
       }];
     } finally {
@@ -139,7 +140,7 @@
       messages = [...messages, {
         id: generateId(),
         role: 'assistant',
-        content: '处理失败，请检查配置。',
+        content: i18n.messages?.error || 'Processing failed, please check configuration',
         timestamp: Date.now()
       }];
     } finally {
@@ -186,7 +187,7 @@
 
   async function deleteConversation(id: string, event: Event) {
     event.stopPropagation();
-    if (confirm('确定要删除这个对话吗？')) {
+    if (confirm(i18n.chat?.deleteConfirm || 'Are you sure you want to delete this conversation?')) {
       await settingsService.deleteConversation(id);
       if (currentConversationId === id) {
         startNewChat();
@@ -224,19 +225,19 @@
 
 <div class="ai-chat-panel">
   <!-- Header -->
-  <div class="chat-header">
+<div class="chat-header">
     <div class="header-title">
       <span class="icon">🤖</span>
-      <span>AI助手</span>
+      <span>{i18n.title || 'AI Assistant'}</span>
     </div>
     <div class="header-actions">
-      <button class="btn-icon" on:click={() => showHistory = !showHistory} title="历史记录">
+      <button class="btn-icon" on:click={() => showHistory = !showHistory} title={i18n.chat?.history || 'History'}>
         📚
       </button>
-      <button class="btn-icon" on:click={startNewChat} title="新对话">
+      <button class="btn-icon" on:click={startNewChat} title={i18n.chat?.newChat || 'New Chat'}>
         ➕
       </button>
-      <button class="btn-icon" on:click={onOpenSettings} title="设置">
+      <button class="btn-icon" on:click={onOpenSettings} title={i18n.settings || 'Settings'}>
         ⚙️
       </button>
     </div>
@@ -246,7 +247,7 @@
   {#if showHistory}
     <div class="history-sidebar">
       <div class="history-header">
-        <h3>对话历史</h3>
+        <h3>{i18n.chat?.history || 'History'}</h3>
         <button class="btn-close" on:click={() => showHistory = false}>✕</button>
       </div>
       <div class="history-list">
@@ -269,7 +270,7 @@
           </div>
         {/each}
         {#if conversations.length === 0}
-          <div class="history-empty">暂无历史对话</div>
+          <div class="history-empty">{i18n.chat?.noHistory || 'No conversation history'}</div>
         {/if}
       </div>
     </div>
@@ -280,8 +281,8 @@
     {#if messages.length === 0}
       <div class="welcome-message">
         <div class="welcome-icon">🤖</div>
-        <h2>AI助手</h2>
-        <p>选择文本并使用快捷操作，或直接开始对话</p>
+        <h2>{i18n.title || 'AI Assistant'}</h2>
+        <p>{i18n.chat?.welcome || 'Select text and use quick actions, or start chatting directly'}</p>
         
         <div class="quick-actions">
           {#each quickActions as action}
@@ -342,7 +343,7 @@
     <textarea
       bind:value={inputText}
       on:keydown={handleKeyDown}
-      placeholder="输入消息... (Enter发送, Shift+Enter换行)"
+      placeholder={i18n.chat?.placeholder || 'Type a message... (Enter to send, Shift+Enter for new line)'}
       disabled={isStreaming}
       rows="2"
     ></textarea>

@@ -106,6 +106,12 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Changelog
 
+### v0.1.13
+- 🐛 Fixed i18n issue: plugin now correctly displays in English/Chinese based on SiYuan Note's language settings
+- 🐛 Fixed floating toolbar button text, context menu items, chat panel, diff viewer, and settings panel all support internationalization
+- 🐛 Fixed toolbar tooltips, alerts, and dialog titles now use i18n properly
+- 📝 Version bump (0.1.12 → 0.1.13)
+
 ### v0.1.12
 - ✨ The floating toolbar now includes a position offset feature, so it no longer covers the selected text (offset distance: 80 px).
 - ✨ Optimized the floating toolbar's pinning feature: once pinned, dragging it manually updates its fixed position.

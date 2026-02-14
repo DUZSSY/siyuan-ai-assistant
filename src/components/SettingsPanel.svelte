@@ -8,6 +8,7 @@
   // Props
   export let onClose: () => void = () => {};
   export let onProviderChange: () => void = () => {};
+  export let i18n: Record<string, any> = {};
 
   // State
   let activeTab: 'providers' | 'ui' | 'prompts' | 'toolbar' = 'providers';
@@ -42,6 +43,26 @@
     providers = settings.providers;
     customButtons = settings.customButtons;
     toolbarButtons = settings.toolbarButtons;
+  }
+
+  // Provider name to i18n key mapping
+  const providerNameKeys: Record<string, string> = {
+    'Ollama (本地)': 'ollama',
+    'OpenAI': 'openai',
+    'DeepSeek': 'deepseek',
+    'Moonshot': 'moonshot',
+    '智谱AI (Z.ai)': 'zhipu',
+    'Claude (Anthropic)': 'claude',
+    '自定义 OpenAI 格式': 'customOpenAI',
+    'GLM（免费试用-额度有限-仅供测试）': 'testGLM'
+  };
+
+  function getProviderName(name: string): string {
+    const key = providerNameKeys[name];
+    if (key) {
+      return i18n.providerNames?.[key] || name;
+    }
+    return name;
   }
 
   function startAddProvider() {
@@ -82,7 +103,7 @@
     if (!editingProvider) return;
     
     if (!editingProvider.name || !editingProvider.baseURL || !editingProvider.model) {
-      alert('请填写所有必填字段');
+      alert(i18n.settingsPanel?.alerts?.fillRequired || 'Please fill in all required fields');
       return;
     }
 
@@ -101,7 +122,7 @@
   }
 
   async function deleteProvider(id: string) {
-    if (confirm('确定要删除这个提供商吗？')) {
+    if (confirm(i18n.settingsPanel?.alerts?.confirmDelete || 'Are you sure you want to delete this provider?')) {
       await settingsService.deleteProvider(id);
       loadSettings();
     }
@@ -120,9 +141,9 @@
     
     try {
       // 发送测试消息
-      const testPrompt = '你好，这是测试';
+      const testPrompt = i18n.chat?.testPrompt || 'Hello, this is a test';
       const messages = [
-        { role: 'system' as const, content: '你是一个有帮助的AI助手。' },
+        { role: 'system' as const, content: i18n.chat?.systemPrompt || 'You are a helpful AI assistant.' },
         { role: 'user' as const, content: testPrompt }
       ];
       
@@ -134,12 +155,12 @@
         isTestPassed = true;
       } else {
         testStatus = 'error';
-        testMessage = 'AI返回空内容';
+        testMessage = i18n.settingsPanel?.alerts?.testEmptyResponse || 'AI returned empty content';
         isTestPassed = false;
       }
     } catch (error) {
       testStatus = 'error';
-      testMessage = error instanceof Error ? error.message : '连接失败';
+      testMessage = error instanceof Error ? error.message : (i18n.settingsPanel?.alerts?.connectionFailed || 'Connection failed');
       isTestPassed = false;
     } finally {
       // 恢复原来的provider
@@ -175,12 +196,12 @@
     // 自动同步到工具栏配置
     await syncCustomButtonsToToolbar();
     // 显示保存提示
-    showSaveMessage('自定义按钮配置已保存');
+    showSaveMessage(i18n.settingsPanel?.alerts?.customSaved || 'Custom button configuration saved');
   }
 
   async function saveToolbarButtons() {
     await settingsService.updateToolbarButtons(toolbarButtons);
-    showSaveMessage('工具栏配置已保存');
+    showSaveMessage(i18n.settingsPanel?.alerts?.toolbarSaved || 'Toolbar configuration saved');
   }
 
   // 同步自定义按钮启用状态到工具栏配置
@@ -223,7 +244,7 @@
       settingsService.updateCustomButtons(customButtons),
       settingsService.updateToolbarButtons(toolbarButtons)
     ]).then(() => {
-      showSaveMessage('已自动保存');
+      showSaveMessage(i18n.settingsPanel?.alerts?.autoSaved || 'Auto saved');
     });
   }
 
@@ -234,9 +255,9 @@
 
 <div class="settings-panel">
   <div class="settings-header">
-    <h2>⚙️ AI助手设置</h2>
+    <h2>⚙️ {i18n.settingsPanel?.title || 'AI Assistant Settings'}</h2>
     <div class="header-buttons">
-      <button class="btn-donate" on:click={() => window.open('https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc', '_blank')} title="打赏支持">❤️</button>
+      <button class="btn-donate" on:click={() => window.open('https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc', '_blank')} title={i18n.settingsPanel?.donate || 'Support with Donation'}>❤️</button>
       <button class="btn-close" on:click={onClose}>✕</button>
     </div>
   </div>
@@ -247,28 +268,28 @@
       class:active={activeTab === 'providers'}
       on:click={() => activeTab = 'providers'}
     >
-      AI提供商
+      {i18n.settingsPanel?.tabs?.providers || 'AI Providers'}
     </button>
     <button 
       class="tab-btn" 
       class:active={activeTab === 'toolbar'}
       on:click={() => activeTab = 'toolbar'}
     >
-      工具栏
+      {i18n.settingsPanel?.tabs?.toolbar || 'Toolbar'}
     </button>
     <button 
       class="tab-btn" 
       class:active={activeTab === 'ui'}
       on:click={() => activeTab = 'ui'}
     >
-      界面设置
+      {i18n.settingsPanel?.tabs?.ui || 'UI Settings'}
     </button>
     <button 
       class="tab-btn" 
       class:active={activeTab === 'prompts'}
       on:click={() => activeTab = 'prompts'}
     >
-      自定义提示词
+      {i18n.settingsPanel?.tabs?.prompts || 'Custom Prompts'}
     </button>
   </div>
 
@@ -277,58 +298,58 @@
       <div class="providers-section">
         {#if editingProvider}
           <div class="provider-form">
-            <h3>{isAddingProvider ? '添加提供商' : '编辑提供商'}</h3>
-            
-            {#if isAddingProvider}
-              <div class="template-buttons">
-                <label>快速模板：</label>
+          <h3>{isAddingProvider ? (i18n.settingsPanel?.providers?.addNew || 'Add Provider') : (i18n.settingsPanel?.providers?.edit || 'Edit Provider')}</h3>
+          
+          {#if isAddingProvider}
+            <div class="template-buttons">
+              <label>{i18n.settingsPanel?.providers?.quickTemplate || 'Quick Template:'}</label>
                 {#each DEFAULT_PROVIDER_TEMPLATES as template}
                   <button 
                     class="template-btn"
                     on:click={() => applyTemplate(template)}
                   >
-                    {template.name}
+                    {getProviderName(template.name)}
                   </button>
                 {/each}
               </div>
             {/if}
 
             <div class="form-group">
-              <label>名称 *</label>
+              <label>{i18n.settingsPanel?.providers?.name || 'Name *'}</label>
               <input 
                 type="text" 
                 bind:value={editingProvider.name}
-                placeholder="例如：Ollama本地"
+                placeholder={i18n.settingsPanel?.providers?.namePlaceholder || 'e.g., Ollama Local'}
               />
             </div>
 
             <!-- 测试AI隐藏API地址等配置 -->
             {#if !isTestAI(editingProvider)}
               <div class="form-group">
-                <label>API地址 *</label>
+                <label>{i18n.settingsPanel?.providers?.apiAddress || 'API URL *'}</label>
                 <input 
                   type="text" 
                   bind:value={editingProvider.baseURL}
-                  placeholder="http://localhost:11434/v1"
+                  placeholder={i18n.settingsPanel?.providers?.apiAddressPlaceholder || 'http://localhost:11434/v1'}
                 />
               </div>
 
               <div class="form-group">
-                <label>API密钥</label>
+                <label>{i18n.settingsPanel?.providers?.apiKey || 'API Key'}</label>
                 <input 
                   type="password" 
                   bind:value={editingProvider.apiKey}
-                  placeholder="sk-..."
+                  placeholder={i18n.settingsPanel?.providers?.apiKeyPlaceholder || 'sk-...'}
                 />
               </div>
             {/if}
 
             <div class="form-group">
-              <label>模型名称 *</label>
+              <label>{i18n.settingsPanel?.providers?.modelName || 'Model Name *'}</label>
               <input 
                 type="text" 
                 bind:value={editingProvider.model}
-                placeholder="llama3.2"
+                placeholder={i18n.settingsPanel?.providers?.modelPlaceholder || 'llama3.2'}
                 disabled={isTestAI(editingProvider)}
               />
             </div>
@@ -336,16 +357,18 @@
             {#if !isTestAI(editingProvider)}
               <div class="form-row">
                 <div class="form-group">
-                  <label>温度 (0-2)</label>
-                  <input 
-                    type="number" 
-                    bind:value={editingProvider.temperature}
-                    min="0" max="2" step="0.1"
-                  />
-                </div>
+            <label>{i18n.settingsPanel?.providers?.temperature || 'Temperature (0-2)'}</label>
+            <input 
+              type="number" 
+              bind:value={editingProvider.temperature}
+              min="0"
+              max="2"
+              step="0.1"
+            />
+          </div>
 
-                <div class="form-group">
-                  <label>最大Token</label>
+          <div class="form-group">
+            <label>{i18n.settingsPanel?.providers?.maxTokens || 'Max Tokens'}</label>
                   <input 
                     type="number" 
                     bind:value={editingProvider.maxTokens}
@@ -358,12 +381,12 @@
             <!-- 测试结果显示 -->
             {#if testStatus === 'success'}
               <div class="test-result success">
-                <div class="test-result-header">✅ 连接成功</div>
+                <div class="test-result-header">✅ {i18n.settingsPanel?.providers?.testSuccess || 'Connection Successful'}</div>
                 <div class="test-result-content">{testMessage}</div>
               </div>
             {:else if testStatus === 'error'}
               <div class="test-result error">
-                <div class="test-result-header">❌ 连接失败</div>
+                <div class="test-result-header">❌ {i18n.settingsPanel?.providers?.testFailed || 'Connection Failed'}</div>
                 <div class="test-result-content">{testMessage}</div>
               </div>
             {/if}
@@ -375,42 +398,42 @@
                 disabled={testStatus === 'testing'}
               >
                 {#if testStatus === 'testing'}
-                  测试中...
+                  {i18n.settingsPanel?.providers?.testing || 'Testing...'}
                 {:else}
-                  测试连接
+                  {i18n.settingsPanel?.providers?.testConnection || 'Test Connection'}
                 {/if}
               </button>
-              <button class="btn-secondary" on:click={cancelEdit}>取消</button>
+              <button class="btn-secondary" on:click={cancelEdit}>{i18n.settingsPanel?.providers?.cancel || 'Cancel'}</button>
               <button 
                 class="btn-primary" 
                 on:click={saveProvider}
                 disabled={!isTestPassed}
-                title={!isTestPassed ? '请先通过连接测试' : ''}
+                title={!isTestPassed ? (i18n.settingsPanel?.providers?.testRequired || 'Please test connection first') : ''}
               >
-                保存
+                {i18n.save || 'Save'}
               </button>
             </div>
             
             {#if !isTestPassed}
               <div class="test-warning">
-                ⚠️ 请先点击"测试连接"按钮，测试通过后才能保存
+                ⚠️ {i18n.settingsPanel?.providers?.testRequired || 'Please click "Test Connection" first, save only allowed after test passes'}
               </div>
             {/if}
           </div>
         {:else}
           <div class="providers-list">
             <div class="section-header">
-              <h3>已配置的提供商</h3>
+              <h3>{i18n.settingsPanel?.providers?.configuredProviders || 'Configured Providers'}</h3>
               <button class="btn-primary" on:click={startAddProvider}>
-                + 添加提供商
+                + {i18n.settingsPanel?.providers?.addNew || 'Add Provider'}
               </button>
             </div>
 
             {#if providers.length === 0}
               <div class="empty-state">
-                <p>暂无配置的AI提供商</p>
+                <p>{i18n.settingsPanel?.providers?.noProviders || 'No configured AI providers'}</p>
                 <button class="btn-primary" on:click={startAddProvider}>
-                  添加第一个提供商
+                  {i18n.settingsPanel?.providers?.addFirst || 'Add First Provider'}
                 </button>
               </div>
             {:else}
@@ -420,26 +443,26 @@
                     <div class="provider-name">
                       {provider.name}
                       {#if provider.isDefault}
-                        <span class="badge">默认</span>
+                        <span class="badge">{i18n.providers?.default || 'Default'}</span>
                       {/if}
                     </div>
                     <div class="provider-details">
                       {#if isTestAI(provider)}
-                        {provider.model}（测试AI）
+                        {provider.model} ({i18n.settingsPanel?.providers?.testAI || 'Test AI'})
                       {:else}
                         {provider.model} @ {provider.baseURL}
                       {/if}
                     </div>
                   </div>
                   <div class="provider-actions">
-                    {#if !provider.isDefault}
-                      <button 
-                        class="btn-text"
-                        on:click={() => setDefaultProvider(provider.id)}
-                      >
-                        设为默认
-                      </button>
-                    {/if}
+                      {#if !provider.isDefault}
+                        <button 
+                          class="btn-text"
+                          on:click={() => setDefaultProvider(provider.id)}
+                        >
+                          {i18n.settingsPanel?.providers?.setAsDefault || 'Set as Default'}
+                        </button>
+                      {/if}
                     <button 
                       class="btn-icon"
                       on:click={() => startEditProvider(provider)}
@@ -462,55 +485,55 @@
 
     {:else if activeTab === 'toolbar'}
       <div class="toolbar-section">
-        <h3>浮动工具栏按钮</h3>
-        <p class="section-desc">选择在浮动工具栏中显示哪些按钮</p>
+        <h3>{i18n.settingsPanel?.toolbar?.buttons || 'Floating Toolbar Buttons'}</h3>
+        <p class="section-desc">{i18n.settingsPanel?.toolbar?.selectButtons || 'Select which buttons to show in floating toolbar'}</p>
 
         <div class="checkbox-list">
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.polish} on:change={() => saveToolbarButtons()} />
-            <span>✨ 润色</span>
+            <span>✨ {i18n.operations?.polish || 'Polish'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.translate} on:change={() => saveToolbarButtons()} />
-            <span>🌐 翻译</span>
+            <span>🌐 {i18n.operations?.translate || 'Translate'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.summarize} on:change={() => saveToolbarButtons()} />
-            <span>📝 总结</span>
+            <span>📝 {i18n.operations?.summarize || 'Summarize'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.expand} on:change={() => saveToolbarButtons()} />
-            <span>📖 扩写</span>
+            <span>📖 {i18n.operations?.expand || 'Expand'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.condense} on:change={() => saveToolbarButtons()} />
-            <span>📄 精简</span>
+            <span>📄 {i18n.operations?.condense || 'Condense'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.rewrite} on:change={() => saveToolbarButtons()} />
-            <span>🔄 改写</span>
+            <span>🔄 {i18n.operations?.rewrite || 'Rewrite'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.continue} on:change={() => saveToolbarButtons()} />
-            <span>➡️ 续写</span>
+            <span>➡️ {i18n.operations?.continue || 'Continue'}</span>
           </label>
         </div>
 
-        <h4>自定义按钮</h4>
-        <p class="section-desc">在"自定义提示词"Tab中配置后会自动同步到这里</p>
+        <h4>{i18n.settingsPanel?.toolbar?.customButtons || 'Custom Buttons'}</h4>
+        <p class="section-desc">{i18n.settingsPanel?.toolbar?.customSync || 'Auto-synced from "Custom Prompts" tab after configuration'}</p>
         
         <div class="checkbox-list">
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.custom1} on:change={() => saveToolbarButtons()} />
-            <span>{customButtons[0]?.name || '自定义1'} {customButtons[0]?.icon || '✨'}</span>
+            <span>{customButtons[0]?.name || i18n.operations?.custom1 || 'Custom 1'} {customButtons[0]?.icon || '✨'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.custom2} on:change={() => saveToolbarButtons()} />
-            <span>{customButtons[1]?.name || '自定义2'} {customButtons[1]?.icon || '🔧'}</span>
+            <span>{customButtons[1]?.name || i18n.operations?.custom2 || 'Custom 2'} {customButtons[1]?.icon || '🔧'}</span>
           </label>
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.custom3} on:change={() => saveToolbarButtons()} />
-            <span>{customButtons[2]?.name || '自定义3'} {customButtons[2]?.icon || '🎯'}</span>
+            <span>{customButtons[2]?.name || i18n.operations?.custom3 || 'Custom 3'} {customButtons[2]?.icon || '🎯'}</span>
           </label>
         </div>
 
@@ -521,18 +544,18 @@
 
     {:else if activeTab === 'ui'}
       <div class="ui-section">
-        <h3>界面设置</h3>
-        <p class="section-desc">MVP版本暂不支持界面自定义</p>
+        <h3>{i18n.settingsPanel?.ui?.title || 'UI Settings'}</h3>
+        <p class="section-desc">{i18n.settingsPanel?.ui?.notSupported || 'UI customization not supported in MVP version'}</p>
       </div>
 
     {:else if activeTab === 'prompts'}
       <div class="prompts-section">
-        <h3>自定义按钮配置</h3>
-        <p class="section-desc">配置三个自定义操作按钮（启用后会自动同步到工具栏）</p>
+        <h3>{i18n.settingsPanel?.prompts?.title || 'Custom Button Configuration'}</h3>
+        <p class="section-desc">{i18n.settingsPanel?.prompts?.desc || 'Configure three custom operation buttons (auto-sync to toolbar after enabled)'}</p>
 
         {#each customButtons as button, index}
           <div class="custom-button-form">
-            <h4>自定义按钮 {index + 1}</h4>
+            <h4>{i18n.settingsPanel?.prompts?.buttonNumber?.replace('{n}', String(index + 1)) || 'Custom Button ' + (index + 1)}</h4>
             
             <label class="checkbox-item">
               <input 
@@ -540,35 +563,35 @@
                 bind:checked={button.enabled} 
                 on:change={() => handleCustomButtonEnabledChange(index)}
               />
-              <span>启用此按钮</span>
+              <span>{i18n.settingsPanel?.prompts?.enable || 'Enable this button'}</span>
             </label>
 
             <div class="form-group">
-              <label>按钮名称</label>
+              <label>{i18n.settingsPanel?.prompts?.buttonName || 'Button Name'}</label>
               <input 
                 type="text" 
                 bind:value={button.name}
-                placeholder="按钮显示名称"
+                placeholder={i18n.settingsPanel?.prompts?.buttonNamePlaceholder || 'Button display name'}
                 on:input={() => saveCustomButtons()}
               />
             </div>
 
             <div class="form-group">
-              <label>图标 (emoji)</label>
+              <label>{i18n.settingsPanel?.prompts?.icon || 'Icon (emoji)'}</label>
               <input 
                 type="text" 
                 bind:value={button.icon}
-                placeholder="✨"
+                placeholder={i18n.settingsPanel?.prompts?.iconPlaceholder || '✨'}
                 maxlength="2"
                 on:input={() => saveCustomButtons()}
               />
             </div>
 
             <div class="form-group">
-              <label>AI提示词</label>
+              <label>{i18n.settingsPanel?.prompts?.prompt || 'AI Prompt'}</label>
               <textarea 
                 bind:value={button.prompt}
-                placeholder="输入AI提示词，例如：请将以下内容转换成表格形式："
+                placeholder={i18n.settingsPanel?.prompts?.promptPlaceholder || 'Enter AI prompt, e.g., Convert the following content to table format:'}
                 rows="3"
                 on:input={() => saveCustomButtons()}
               ></textarea>

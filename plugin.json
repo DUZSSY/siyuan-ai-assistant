@@ -3,7 +3,7 @@
   "name": "siyuan-ai-assistant",
   "author": "DUZSSY",
   "url": "https://github.com/DUZSSY/siyuan-ai-assistant",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "minAppVersion": "3.5.3",
   "disabledInPublish": false,
   "backends": ["windows", "linux", "darwin", "docker"],
