@@ -95,6 +95,12 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 5. **Local Deployment Recommendation**: To protect data privacy, we recommend using **Ollama local deployment**.
 
+6. **AI Source Responsibility**: This tool does not assume responsibility for AI sources. Users must ensure their AI providers and usage comply with applicable laws and regulations.
+
+7. **Testing Channel Disclaimer**: The test AI service provided is for testing purposes only. Free quota is limited and availability is not guaranteed. Please configure your own API key as soon as possible.
+
+8. **Legal Compliance**: When using this plugin, you must strictly comply with local laws and regulations. The developer assumes no liability for any legal issues arising from use of this plugin.
+
 **By using this plugin, you acknowledge and accept the above risks.**
 
 ## 🛡️ Privacy
@@ -107,16 +113,16 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 ## 📝 Changelog
 
 ### v0.1.12
-- ✨ 浮动工具栏增加位置偏移功能，不再遮挡选中文本（偏移距离80px）
-- ✨ 浮动工具栏置顶功能优化：置顶后手动拖拽可更新固定位置
-- ✨ 浮动工具栏置顶功能优化：Diff窗口关闭后自动恢复到固定位置或原位置
-- ✨ 设置中切换默认模型后，浮动工具栏（置顶状态）自动更新显示
-- ✨ 测试AI配置优化：隐藏API地址、API密钥、温度、最大Token等敏感/受限配置
-- ✨ 测试AI标识优化：通过ID前缀（test-ai-）识别，支持扩展多个测试AI
-- ✨ 切换/编辑提供商时自动清除上次的测试连接状态
-- ✨ 搭建 API 中转服务（api-proxy/）供测试使用
-- ⚠️ 测试AI免费额度有限，不保证可用性，仅支持glm-4-flash模型
-- 📝 版本升级 (0.1.11 → 0.1.12)
+- ✨ Floating toolbar offset feature added, no longer covers selected text (80px offset)
+- ✨ Floating toolbar pin feature optimized: dragging after pinning updates fixed position
+- ✨ Floating toolbar pin feature optimized: automatically restore position after Diff viewer closes
+- ✨ Floating toolbar updates automatically when default provider changed in settings (even when pinned)
+- ✨ Test AI settings optimization: hidden API URL, API key, temperature, maxTokens
+- ✨ Test AI identification optimized: use ID prefix (test-ai-) for easy extension
+- ✨ Clear test connection status when switching/editing providers
+- ✨ Built API proxy service (api-proxy/) for testing
+- ⚠️ Test AI has limited quota, availability not guaranteed, only glm-4-flash model supported
+- 📝 Version bump (0.1.11 → 0.1.12)
 
 ### v0.1.11
 - ✨ Added default test AI connection (via ai-proxy-pied.vercel.app) for out-of-box experience, no configuration needed for new users
