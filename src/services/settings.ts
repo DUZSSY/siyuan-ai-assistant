@@ -168,7 +168,20 @@ export class SettingsService {
     }
 
     private getDefaultSettings(): PluginSettings {
-        const defaultProvider: AIProvider = {
+        // 测试AI连接（默认）- 免费试用，无需API Key
+        const testProvider: AIProvider = {
+            id: 'test-ai-default',
+            name: '测试AI (免费试用)',
+            apiKey: '',
+            baseURL: 'https://ai-proxy-pied.vercel.app/v1',
+            model: 'glm-4-flash',
+            temperature: 0.7,
+            maxTokens: 2048,
+            isDefault: true
+        };
+
+        // Ollama本地部署选项
+        const ollamaProvider: AIProvider = {
             id: 'ollama-default',
             name: 'Ollama (本地)',
             apiKey: 'ollama',
@@ -176,12 +189,12 @@ export class SettingsService {
             model: 'llama3.2',
             temperature: 0.7,
             maxTokens: 2048,
-            isDefault: true
+            isDefault: false
         };
 
         return {
-            providers: [defaultProvider],
-            currentProviderId: defaultProvider.id,
+            providers: [testProvider, ollamaProvider],
+            currentProviderId: testProvider.id,
             conversations: [],
             operationPrompts: DEFAULT_PROMPTS,
             uiMode: 'both',

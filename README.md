@@ -106,6 +106,16 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Changelog
 
+### v0.1.11
+- ✨ Added default test AI connection (via ai-proxy-pied.vercel.app) for out-of-box experience, no configuration needed for new users
+- ✨ Retained Ollama local deployment as alternative option
+- 📝 Version bump (0.1.10 → 0.1.11)
+
+### v0.1.10
+- 📝 Updated prompts with stricter output format requirements
+- 🐛 Optimized Diff viewer original text display: shows selected text instead of full block content
+- 📝 Version bump (0.1.9 → 0.1.10)
+
 ### v0.1.9
 - 🐛 Fixed AI provider configuration logic bug that caused random "AI error, please check provider configuration" alerts
 - 🎨 Enhanced translation prompt for better language detection
