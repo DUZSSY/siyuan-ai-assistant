@@ -106,6 +106,14 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Changelog
 
+### v0.1.14
+- 🐛 Fixed context menu not showing issue (adapted to new SiYuan event structure)
+- 🐛 Enhanced Ctrl/Cmd+A selection logic for floating toolbar popup
+- 🐛 Fixed right-click menu getting empty block content
+- ✨ Right-click menu now dynamically displays buttons based on toolbar settings
+- ✨ Added second test AI connection as fallback option
+- 📝 Version bump (0.1.13 → 0.1.14)
+
 ### v0.1.13
 - 🐛 Fixed i18n issue: plugin now correctly displays in English/Chinese based on SiYuan Note's language settings
 - 🐛 Fixed floating toolbar button text, context menu items, chat panel, diff viewer, and settings panel all support internationalization
@@ -125,7 +133,7 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 - 📝 Version upgrade (0.1.11 → 0.1.12)
 
 ### v0.1.11
-- ✨ Added default test AI connection (via ai-proxy-pied.vercel.app) for out-of-box experience, no configuration needed for new users
+- ✨ Added default test AI connection for out-of-box experience, no configuration needed for new users
 - ✨ Retained Ollama local deployment as alternative option
 - 📝 Version bump (0.1.10 → 0.1.11)
 

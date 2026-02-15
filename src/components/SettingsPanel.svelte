@@ -201,6 +201,8 @@
 
   async function saveToolbarButtons() {
     await settingsService.updateToolbarButtons(toolbarButtons);
+    // 通知外部工具栏按钮已变更，需要刷新工具栏显示
+    onProviderChange();
     showSaveMessage(i18n.settingsPanel?.alerts?.toolbarSaved || 'Toolbar configuration saved');
   }
 

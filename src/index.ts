@@ -27,6 +27,7 @@ export default class AIAssistantPlugin extends Plugin {
     private currentSelectionStart: number = -1;  // 选中文字在原文中的起始索引
     private currentSelectionEnd: number = -1;  // 选中文字在原文中的结束索引
     private displayTextForDiff: string = '';  // 用于Diff窗口显示的原文（选中文字或整个块）
+    private isFullBlockReplace: boolean = false;  // 标记是否为整块替换（右键菜单场景）
     private blockIconClickHandler: ((event: CustomEvent) => void) | null = null; // eventBus监听器引用
 
     async onload() {
@@ -184,7 +185,7 @@ export default class AIAssistantPlugin extends Plugin {
 
     private initContextMenu() {
         this.contextMenuManager = new ContextMenuManager({
-            onOperation: async (type, blockId) => {
+            onOperation: async (type, blockId, blockContent) => {
                 // 确保 AI 提供商已配置
                 if (!await this.ensureProviderConfigured()) {
                     alert(this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
@@ -192,18 +193,15 @@ export default class AIAssistantPlugin extends Plugin {
                     return;
                 }
 
-                // 获取当前选中的文字（如果有）
-                const selectedText = blockService.getSelectedText();
-                const block = await blockService.getBlockContent(blockId);
-                if (!block) return;
-
-                // 如果有选中的文字，使用选中文字；否则使用整个块内容
-                const inputText = selectedText || block.content;
+                if (!blockContent || blockContent.trim().length === 0) {
+                    alert(this.i18n?.messages?.blockContentEmpty || '块内容为空');
+                    return;
+                }
 
                 try {
-                    const response = await aiService.processText(inputText, type);
-                    // 传递selectedText以便在DiffViewer中显示选中的文字
-                    this.showDiffViewer(block.content, response.content, type, blockId, selectedText || '');
+                    const response = await aiService.processText(blockContent, type);
+                    // 右键菜单场景：isFullBlock 标记为 true，表示修改整个块
+                    this.showDiffViewer(blockContent, response.content, type, blockId, '', -1, -1, true);
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : String(error);
                     if (errorMsg.includes('not configured')) {
@@ -258,7 +256,7 @@ export default class AIAssistantPlugin extends Plugin {
         });
     }
 
-    private showDiffViewer(original: string, modified: string, operation: AIOperationType, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) {
+    private showDiffViewer(original: string, modified: string, operation: AIOperationType, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number, isFullBlock: boolean = false) {
         if (this.diffDialog) {
             this.diffDialog.destroy();
         }
@@ -270,9 +268,11 @@ export default class AIAssistantPlugin extends Plugin {
         this.currentSelectedText = selectedText || '';
         this.currentSelectionStart = selectionStart ?? -1;
         this.currentSelectionEnd = selectionEnd ?? -1;
+        this.isFullBlockReplace = isFullBlock; // 标记是否为整块替换
 
         // 设置用于Diff显示的原文：优先使用选中文字，否则使用整个块内容
-        this.displayTextForDiff = (selectedText && selectedText.length > 0) ? selectedText : original;
+        // 右键菜单场景（isFullBlock=true）：始终显示整个块内容
+        this.displayTextForDiff = isFullBlock ? original : ((selectedText && selectedText.length > 0) ? selectedText : original);
 
         const container = document.createElement('div');
 
@@ -295,8 +295,11 @@ export default class AIAssistantPlugin extends Plugin {
             if (this.currentOriginalText) {
                 let newContent: string;
                 
-                // 优先使用索引进行精确替换
-                if (this.currentSelectionStart >= 0 && this.currentSelectionEnd > this.currentSelectionStart) {
+                // 右键菜单场景：整块替换，直接使用 AI 结果作为新内容
+                if (this.isFullBlockReplace) {
+                    newContent = result;
+                } else if (this.currentSelectionStart >= 0 && this.currentSelectionEnd > this.currentSelectionStart) {
+                    // 浮动工具栏场景：使用索引进行精确替换
                     const beforeSelection = this.currentOriginalText.substring(0, this.currentSelectionStart);
                     const afterSelection = this.currentOriginalText.substring(this.currentSelectionEnd);
                     newContent = beforeSelection + result + afterSelection;

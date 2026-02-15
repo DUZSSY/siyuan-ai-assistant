@@ -36,6 +36,13 @@ export class FloatingToolbar {
     private keyDownHandler: ((e: KeyboardEvent) => void) | null = null;
     private mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
     private globalMouseUpHandler: ((e: MouseEvent) => void) | null = null;
+    private selectionChangeHandler: (() => void) | null = null;
+
+    // 用于防止鼠标和键盘选区事件重复触发
+    private lastSelectionText: string = '';
+    private lastSelectionTime: number = 0;
+    private selectionDebounceTimeout: number | null = null;
+    private isMouseDown: boolean = false;  // 追踪鼠标是否按下
 
     private i18n: Record<string, any>;
 
@@ -50,6 +57,7 @@ export class FloatingToolbar {
 
         // 保存处理器引用以便后续移除
         this.mouseUpHandler = (e: MouseEvent) => {
+            this.isMouseDown = false;  // 鼠标释放
             clearTimeout(selectionTimeout);
             selectionTimeout = window.setTimeout(() => {
                 this.handleSelectionChange(e);
@@ -57,6 +65,7 @@ export class FloatingToolbar {
         };
 
         this.mouseDownHandler = (e: MouseEvent) => {
+            this.isMouseDown = true;  // 鼠标按下
             const target = e.target as Node;
             if (this.modelDropdownElement && !this.modelDropdownElement.contains(target)) {
                 this.hideModelDropdown();
@@ -78,22 +87,79 @@ export class FloatingToolbar {
             }
         };
 
+        // 监听选区变化（支持键盘快捷键如 Ctrl+A）
+        // 只在鼠标未按下时响应（避免与 mouseup 重复触发）
+        this.selectionChangeHandler = () => {
+            // 如果鼠标正在按下状态，说明是鼠标拖拽选中文本，不处理
+            // mouseup 事件会处理这种情况
+            if (this.isMouseDown) {
+                return;
+            }
+
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) {
+                return;
+            }
+
+            const text = selection.toString().trim();
+            if (text.length < 1) {
+                return;
+            }
+
+            // 检查是否在思源编辑器内
+            const range = selection.getRangeAt(0);
+            const container = range.commonAncestorContainer;
+            const element = container.nodeType === Node.ELEMENT_NODE
+                ? container as Element
+                : container.parentElement;
+
+            if (!element || !element.closest('.protyle-wysiwyg')) {
+                return;
+            }
+
+            // 防抖处理：避免短时间内重复触发
+            const now = Date.now();
+            const timeSinceLastSelection = now - this.lastSelectionTime;
+
+            // 如果选中的文字和上次相同，且时间间隔很短，则忽略
+            if (text === this.lastSelectionText && timeSinceLastSelection < 300) {
+                return;
+            }
+
+            // 清除之前的防抖定时器
+            if (this.selectionDebounceTimeout) {
+                clearTimeout(this.selectionDebounceTimeout);
+            }
+
+            // 设置新的防抖定时器
+            this.selectionDebounceTimeout = window.setTimeout(() => {
+                this.lastSelectionText = text;
+                this.lastSelectionTime = Date.now();
+                // 对于键盘选区，传递 null 作为事件参数
+                this.handleSelectionChange(null as any);
+            }, 100);
+        };
+
         document.addEventListener('mouseup', this.mouseUpHandler);
         document.addEventListener('mousedown', this.mouseDownHandler);
         document.addEventListener('scroll', this.scrollHandler, true);
         document.addEventListener('keydown', this.keyDownHandler);
+        document.addEventListener('selectionchange', this.selectionChangeHandler);
     }
 
-    private handleSelectionChange(event: MouseEvent): void {
+    private handleSelectionChange(event: MouseEvent | null): void {
         const settings = settingsService.getSettings();
-        
+
         if (!settings.showFloatingToolbar) {
             return;
         }
 
-        const target = event.target as HTMLElement;
-        if (!target.closest('.protyle-wysiwyg')) {
-            return;
+        // 如果有事件对象，检查是否在思源编辑器内
+        if (event) {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.protyle-wysiwyg')) {
+                return;
+            }
         }
 
         const selection = window.getSelection();
@@ -112,7 +178,7 @@ export class FloatingToolbar {
 
         // 计算选中文字在块内容中的精确位置
         this.calculateSelectionIndices(selection, text);
-        
+
         this.currentSelection = text;
         this.show(event, text);
     }
@@ -182,7 +248,7 @@ export class FloatingToolbar {
         }
     }
 
-    private show(event: MouseEvent, selectedText: string): void {
+    private show(event: MouseEvent | null, selectedText: string): void {
         if (!this.toolbarElement) {
             this.createToolbar();
         }
@@ -665,7 +731,8 @@ export class FloatingToolbar {
         let blockContent = '';
         if (this.currentBlockId) {
             const fullBlockContent = await blockService.getBlockContent(this.currentBlockId);
-            blockContent = fullBlockContent?.content || '';
+            // 思源笔记 API 返回的内容通常在 markdown 字段中
+            blockContent = fullBlockContent?.markdown || fullBlockContent?.content || '';
         }
 
         // 如果无法获取完整块内容，从DOM获取
@@ -873,6 +940,16 @@ export class FloatingToolbar {
         if (this.globalMouseUpHandler) {
             document.removeEventListener('mouseup', this.globalMouseUpHandler);
             this.globalMouseUpHandler = null;
+        }
+        if (this.selectionChangeHandler) {
+            document.removeEventListener('selectionchange', this.selectionChangeHandler);
+            this.selectionChangeHandler = null;
+        }
+
+        // 清理防抖定时器
+        if (this.selectionDebounceTimeout) {
+            clearTimeout(this.selectionDebounceTimeout);
+            this.selectionDebounceTimeout = null;
         }
 
         if (this.toolbarElement) {

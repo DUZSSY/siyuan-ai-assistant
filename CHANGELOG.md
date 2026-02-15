@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.14] - 2026-02-15
+
+### 🐛 Fixed
+- Fixed context menu not showing issue (adapted to new SiYuan event structure)
+- Enhanced Ctrl/Cmd+A selection logic for floating toolbar popup
+- Fixed right-click menu getting empty block content
+- Right-click menu now dynamically displays buttons based on toolbar settings
+
+### ✨ Added
+- Added second test AI connection as fallback option
+
+### 📝 Changed
+- Version bump (0.1.13 → 0.1.14)
+
 ## [0.1.13] - 2026-02-15
 
 ### 🐛 Fixed

@@ -22,10 +22,10 @@
     "custom3": "Custom 3"
   },
   "settings": {
-    "title": "AI Assistant Settings"
+    "title": "Settings"
   },
   "settingsPanel": {
-    "title": "AI Assistant Settings",
+    "title": "Settings",
     "tabs": {
       "providers": "AI Providers",
       "toolbar": "Toolbar",

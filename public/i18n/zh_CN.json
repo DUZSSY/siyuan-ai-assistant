@@ -22,10 +22,10 @@
     "custom3": "自定义3"
   },
   "settings": {
-    "title": "AI助手设置"
+    "title": "设置"
   },
   "settingsPanel": {
-    "title": "AI助手设置",
+    "title": "设置",
     "tabs": {
       "providers": "AI提供商",
       "toolbar": "工具栏",

@@ -181,6 +181,18 @@ export class SettingsService {
             isDefault: true
         };
 
+        // 测试AI连接2（免费试用）- 备用线路
+        const testProvider2: AIProvider = {
+            id: 'test-ai-glm2',
+            name: 'GLM2（免费试用2-额度有限-仅供测试）',
+            apiKey: '0cVvg7YJ4p2EWksj631on89fLeFPXzm5',
+            baseURL: 'https://duzssy.zeabur.app/v1',
+            model: 'glm-4-flash',
+            temperature: 0.7,
+            maxTokens: 1000,
+            isDefault: false
+        };
+
         // Ollama本地部署选项
         const ollamaProvider: AIProvider = {
             id: 'ollama-default',
@@ -194,7 +206,7 @@ export class SettingsService {
         };
 
         return {
-            providers: [testProvider, ollamaProvider],
+            providers: [testProvider, testProvider2, ollamaProvider],
             currentProviderId: testProvider.id,
             conversations: [],
             operationPrompts: DEFAULT_PROMPTS,
