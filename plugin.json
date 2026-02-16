@@ -6,8 +6,8 @@
   "version": "0.1.14",
   "minAppVersion": "3.5.3",
   "disabledInPublish": false,
-  "backends": ["windows", "linux", "darwin", "docker"],
-  "frontends": ["desktop", "browser-desktop", "desktop-window"],
+"backends": ["windows", "linux", "darwin", "docker", "android", "ios"],
+  "frontends": ["desktop", "browser-desktop", "desktop-window", "browser-mobile", "mobile"],
   "displayName": {
     "default": "AI Assistant",
     "zh_CN": "AI助手"
