@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.15] - 2026-02-16
+
+### ✨ Added
+- 新增移动端代理支持，可在平板、手机等设备使用（已在华为MatePad测试，iOS未测试）
+- Added mobile proxy support for tablets and phones (tested on Huawei MatePad, iOS not tested)
+- 扩展支持的平台：后端增加 android、ios；前端增加 browser-mobile、mobile
+- Extended platform support: backends added android, ios; frontends added browser-mobile, mobile
+
+### 🐛 Fixed
+- 修复自定义按钮无法读取选中文字的问题
+- Fixed custom buttons not receiving selected text
+
+### ⚠️ Notes
+- 移动设备建议使用AI提供商的API服务
+- Ollama局域网部署需注意CORS配置
+- Mobile devices recommended to use AI provider APIs
+- Ollama LAN deployment requires CORS configuration
+
 ## [0.1.14] - 2026-02-15
 
 ### 🐛 Fixed

@@ -748,7 +748,7 @@ export class FloatingToolbar {
         // 构建提示词：告诉AI只处理选中部分
         let finalPrompt = '';
         const isPartialSelection = blockContent !== this.currentSelection;
-        
+
         if (isPartialSelection) {
             // 只选中部分内容
             const operationPrompts: Record<string, string> = {
@@ -760,10 +760,22 @@ export class FloatingToolbar {
                 rewrite: `请改写以下文本：\n\n${blockContent}`,
                 continue: `请续写以下文本：\n\n${blockContent}`,
             };
-            finalPrompt = operationPrompts[type] || prompt || `${type}: ${this.currentSelection}`;
+            // 修复：自定义按钮确保包含选中文字
+            const isCustomButton = type.startsWith('custom');
+            if (isCustomButton && prompt) {
+                finalPrompt = `${prompt}\n\n${this.currentSelection}`;
+            } else {
+                finalPrompt = operationPrompts[type] || prompt || `${type}: ${this.currentSelection}`;
+            }
         } else {
             // 选中整个块或无法获取完整内容
-            finalPrompt = prompt || '';
+            // 修复：自定义按钮确保包含选中文字
+            const isCustomButton = type.startsWith('custom');
+            if (isCustomButton && prompt) {
+                finalPrompt = `${prompt}\n\n${this.currentSelection}`;
+            } else {
+                finalPrompt = prompt || '';
+            }
         }
 
         this.options.onOperationStart(

@@ -104,79 +104,24 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 - ✅ Optional sensitive information masking
 - ✅ Open source, auditable code
 
-## 📝 Changelog
+## 📝 Recent Updates
+
+### v0.1.15
+- ✨ Added mobile proxy support for tablets and phones (tested on Huawei MatePad)
+- ✨ Extended platform support: backends added android, ios; frontends added browser-mobile, mobile
+- 🐛 Fixed custom buttons not receiving selected text
+- ⚠️ Mobile devices recommended to use AI provider APIs; Ollama LAN deployment requires CORS configuration
 
 ### v0.1.14
 - 🐛 Fixed context menu not showing issue (adapted to new SiYuan event structure)
 - 🐛 Enhanced Ctrl/Cmd+A selection logic for floating toolbar popup
-- 🐛 Fixed right-click menu getting empty block content
 - ✨ Right-click menu now dynamically displays buttons based on toolbar settings
-- ✨ Added second test AI connection as fallback option
-- 📝 Version bump (0.1.13 → 0.1.14)
 
 ### v0.1.13
 - 🐛 Fixed i18n issue: plugin now correctly displays in English/Chinese based on SiYuan Note's language settings
 - 🐛 Fixed floating toolbar button text, context menu items, chat panel, diff viewer, and settings panel all support internationalization
-- 🐛 Fixed toolbar tooltips, alerts, and dialog titles now use i18n properly
-- 📝 Version bump (0.1.12 → 0.1.13)
 
-### v0.1.12
-- ✨ The floating toolbar now includes a position offset feature, so it no longer covers the selected text (offset distance: 80 px).
-- ✨ Optimized the floating toolbar's pinning feature: once pinned, dragging it manually updates its fixed position.
-- ✨ Further optimization: when the Diff window is closed, the toolbar automatically returns to its fixed or original position.
-- ✨ After changing the default model in settings, the floating toolbar (in pinned state) automatically refreshes its display.
-- ✨ Test‑AI configuration improvements: sensitive and restricted options such as API URL, API key, temperature, max tokens, etc., are hidden.
-- ✨ Test‑AI identification refinement: identify test AIs by the prefix `test-ai-`; supports adding multiple test AI instances.
-- ✨ Switching or editing a provider automatically clears the previous test connection status.
-- ✨ Added an API proxy service (`api-proxy/`) for test purposes.
-- ⚠️ The free quota for test AIs is limited; availability is not guaranteed and only the `glm-4-flash` model is supported.
-- 📝 Version upgrade (0.1.11 → 0.1.12)
-
-### v0.1.11
-- ✨ Added default test AI connection for out-of-box experience, no configuration needed for new users
-- ✨ Retained Ollama local deployment as alternative option
-- 📝 Version bump (0.1.10 → 0.1.11)
-
-### v0.1.10
-- 📝 Updated prompts with stricter output format requirements
-- 🐛 Optimized Diff viewer original text display: shows selected text instead of full block content
-- 📝 Version bump (0.1.9 → 0.1.10)
-
-### v0.1.9
-- 🐛 Fixed AI provider configuration logic bug that caused random "AI error, please check provider configuration" alerts
-- 🎨 Enhanced translation prompt for better language detection
-- 🎨 Auto-hide floating toolbar when diff viewer opens
-- 📝 Version bump (0.1.8 → 0.1.9)
-- 📝 Updated documentation with free cloud model recommendations
-
-### v0.1.8
-- 🐛 Updated plugin images to meet bazaar requirements
-- 🐛 Fixed icon.png and preview.png size issues
-- 🐛 Updated description and documentation
-- 📝 Version bump (0.1.7 → 0.1.8)
-
-### v0.1.7
-- 🐛 Fixed floating toolbar still working after plugin disabled
-- 🐛 Fixed context menu not showing
-- 🐛 Fixed ContextMenuManager missing destroy() method causing TypeError
-- 🐛 Fixed FloatingToolbar event listener leak causing duplicate toolbars
-- 🐛 Fixed eventBus listener not being removed on plugin unload
-- 🐛 Fixed uninstall() using wrong storage key
-- 🐛 Removed all debug console logs (45 instances)
-- 🐛 Cleaned up packaged icon.png.txt file
-- 📝 Version now follows semver (0.1.5.1 → 0.1.6)
-
-### v0.1.5
-- ✨ Added draggable floating toolbar with pin functionality
-- ✨ Optimized text replacement precision (supports multi-same-character positioning)
-- ✨ Diff popup original text display optimization
-- 🐛 Fixed various stability issues
-
-### v0.1.0
-- 🎉 Initial release
-- Multi-AI provider support
-- Basic text processing features
-- Conversational interaction
+[View full changelog](CHANGELOG.md)
 
 ## 📄 License
 
