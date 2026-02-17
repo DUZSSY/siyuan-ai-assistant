@@ -12,7 +12,7 @@ export class OpenAIAdapter extends BaseProviderAdapter {
             baseURL: provider.baseURL,
             dangerouslyAllowBrowser: true,
             maxRetries: 2,
-            timeout: 60000
+            timeout: 180000
         });
     }
 
@@ -52,7 +52,7 @@ export class OpenAIAdapter extends BaseProviderAdapter {
             model: this.getRequestModel(model),
             messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
             temperature: this.provider.temperature ?? 0.7,
-            max_tokens: this.provider.maxTokens ?? 2048
+            max_tokens: this.provider.maxTokens ?? 4096
         });
 
         const rawContent = response.choices[0]?.message?.content || '';
@@ -79,7 +79,7 @@ export class OpenAIAdapter extends BaseProviderAdapter {
                 model: this.getRequestModel(model),
                 messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
                 temperature: this.provider.temperature ?? 0.7,
-                max_tokens: this.provider.maxTokens ?? 2048,
+                max_tokens: this.provider.maxTokens ?? 4096,
                 stream: true
             });
 

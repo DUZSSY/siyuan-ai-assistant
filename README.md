@@ -96,6 +96,15 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Recent Updates
 
+### v0.1.16
+- ⏱️ Increased timeout from 60s to 180s for better large model support
+- 📝 Increased default max_tokens from 2048 to 4096 to avoid truncation
+- 🏷️ Fixed DiffViewer title to show custom button names
+- ⚠️ Added detailed error messages (timeout, network, auth, rate limit, etc.)
+- 🔧 Fixed empty prompt handling for custom buttons
+- 🛡️ Added non-empty validation for custom button configuration
+- 📜 Fixed model dropdown scroll issue for long provider lists
+
 ### v0.1.15
 - ✨ Added mobile proxy support for tablets and phones (tested on Huawei MatePad)
 - ✨ Extended platform support: backends added android, ios; frontends added browser-mobile, mobile
@@ -107,11 +116,7 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 - 🐛 Enhanced Ctrl/Cmd+A selection logic for floating toolbar popup
 - ✨ Right-click menu now dynamically displays buttons based on toolbar settings
 
-### v0.1.13
-- 🐛 Fixed i18n issue: plugin now correctly displays in English/Chinese based on SiYuan Note's language settings
-- 🐛 Fixed floating toolbar button text, context menu items, chat panel, diff viewer, and settings panel all support internationalization
-
-[View full changelog](CHANGELOG.md)
+[View full changelog](https://github.com/DUZSSY/siyuan-ai-assistant/blob/main/CHANGELOG.md)
 
 ## 🤝 Contributing
 

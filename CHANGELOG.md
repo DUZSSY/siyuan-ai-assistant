@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.16] - 2026-02-17
+
+### ✨ Added / 新增
+- 超时时间增加到180秒，支持大模型处理 / Increased timeout to 180s for large model support
+- 默认 max_tokens 增加到4096，避免文本截断 / Default max_tokens increased to 4096 to avoid truncation
+- 增加8种详细错误提示 / Added 8 detailed error messages
+- 自定义按钮配置增加非空校验 / Added non-empty validation for custom button configuration
+
+### 🐛 Fixed / 修复
+- 修复 DiffViewer 标题显示问题 / Fixed DiffViewer title display issue
+- 修复右键菜单获取块内容为空的问题 / Fixed context menu empty content issue
+- 修复自定义按钮空 prompt 处理问题 / Fixed custom button empty prompt handling
+- 修复模型列表过长无法滚动问题（支持鼠标滚轮和触摸滚动）/ Fixed model dropdown scroll issue
+
 ## [0.1.15] - 2026-02-16
 
 ### ✨ Added

@@ -456,18 +456,21 @@ export class FloatingToolbar {
 
         const dropdown = document.createElement('div');
         dropdown.className = 'ai-model-dropdown';
-        dropdown.style.cssText = `
-            position: fixed;
-            z-index: 10000;
-            background: var(--b3-theme-background, #fff);
-            border: 1px solid var(--b3-border-color, #e0e0e0);
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            max-height: 200px;
-            overflow-y: auto;
-            min-width: 200px;
-            padding: 4px 0;
-        `;
+    dropdown.style.cssText = `
+      position: fixed;
+      z-index: 10000;
+      background: var(--b3-theme-background, #fff);
+      border: 1px solid var(--b3-border-color, #e0e0e0);
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      max-height: 200px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--b3-theme-on-surface, #ccc) transparent;
+      min-width: 200px;
+      padding: 4px 0;
+    `;
 
         providers.forEach(provider => {
             const item = document.createElement('div');
@@ -811,7 +814,42 @@ export class FloatingToolbar {
                 );
             }
         } catch (error) {
-            alert(this.i18n.messages?.error || '操作失败，请检查AI提供商配置');
+            let errorMsg = this.i18n.messages?.error || '处理失败';
+            
+            if (error instanceof Error) {
+                const errorText = error.message.toLowerCase();
+                
+                // 超时错误
+                if (errorText.includes('timeout') || errorText.includes('aborted') || errorText.includes('etimedout')) {
+                    errorMsg = this.i18n.messages?.timeoutError || '请求超时（180秒），请检查网络连接或稍后重试';
+                }
+                // 网络错误
+                else if (errorText.includes('network') || errorText.includes('fetch') || errorText.includes('enetunreach') || errorText.includes('econnrefused')) {
+                    errorMsg = this.i18n.messages?.networkError || '网络错误，请检查网络连接';
+                }
+                // 认证错误
+                else if (errorText.includes('auth') || errorText.includes('api key') || errorText.includes('unauthorized') || errorText.includes('401')) {
+                    errorMsg = this.i18n.messages?.authError || 'API密钥无效或已过期，请检查配置';
+                }
+                // 频率限制
+                else if (errorText.includes('rate limit') || errorText.includes('too many') || errorText.includes('429')) {
+                    errorMsg = this.i18n.messages?.rateLimitError || '请求过于频繁，请稍后再试';
+                }
+                // AI提供商错误（500系列或明确的provider错误）
+                else if (errorText.includes('500') || errorText.includes('502') || errorText.includes('503') || errorText.includes('bad gateway') || errorText.includes('service unavailable')) {
+                    errorMsg = this.i18n.messages?.providerError || 'AI提供商服务异常，请稍后重试';
+                }
+                // 模型错误
+                else if (errorText.includes('model') || errorText.includes('invalid model') || errorText.includes('model not found')) {
+                    errorMsg = this.i18n.messages?.modelError || '模型处理失败，请重试或更换模型';
+                }
+                // 其他错误，显示简要信息
+                else {
+                    errorMsg = `${this.i18n.messages?.error || '处理失败'}：${error.message}`;
+                }
+            }
+            
+            alert(errorMsg);
         } finally {
             this.setLoading(false);
             this.hide();

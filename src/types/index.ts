@@ -212,7 +212,7 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
         model: 'llama3.2',
         apiKey: 'ollama',
         temperature: 0.7,
-        maxTokens: 2048
+        maxTokens: 4096
     },
     {
         name: 'OpenAI',
@@ -220,7 +220,7 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
         model: 'gpt-3.5-turbo',
         apiKey: '',
         temperature: 0.7,
-        maxTokens: 2048
+        maxTokens: 4096
     },
     {
         name: 'DeepSeek',
@@ -228,7 +228,7 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
         model: 'deepseek-chat',
         apiKey: '',
         temperature: 0.7,
-        maxTokens: 2048
+        maxTokens: 4096
     },
     {
         name: 'Moonshot',
@@ -236,7 +236,7 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
         model: 'moonshot-v1-8k',
         apiKey: '',
         temperature: 0.7,
-        maxTokens: 2048
+        maxTokens: 4096
     },
     {
         name: '智谱AI (Z.ai)',
@@ -260,7 +260,7 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
         model: '',
         apiKey: '',
         temperature: 0.7,
-        maxTokens: 2048
+        maxTokens: 4096
     }
 ];
 

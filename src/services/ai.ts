@@ -54,7 +54,7 @@ export class AIService {
         }
     }
 
-    async processText(text: string, operation: AIOperationType): Promise<AIResponse> {
+    async processText(text: string, operation: AIOperationType, customPrompt?: string): Promise<AIResponse> {
         if (!this.adapter) {
             throw new Error('AI provider not configured');
         }
@@ -63,8 +63,11 @@ export class AIService {
             throw new Error('Use streamChat for chat operation');
         }
 
-        const prompt = DEFAULT_PROMPTS[operation];
-        if (!prompt) {
+        // 使用自定义 prompt 或默认 prompt（允许空字符串，用于自定义按钮）
+        const prompt = customPrompt !== undefined ? customPrompt : DEFAULT_PROMPTS[operation];
+        
+        // 仅当 prompt 为 undefined 时才报错（表示未知操作类型）
+        if (prompt === undefined) {
             throw new Error(`Unknown operation: ${operation}`);
         }
 
@@ -84,7 +87,8 @@ export class AIService {
     }
 
     buildOperationMessages(text: string, operation: AIOperationType, customPrompt?: string): AIChatMessage[] {
-        const prompt = customPrompt || DEFAULT_PROMPTS[operation];
+        // 当 customPrompt 为 undefined 时使用默认 prompt；空字符串是有效值（允许用户设置空 prompt）
+        const prompt = customPrompt !== undefined ? customPrompt : DEFAULT_PROMPTS[operation];
         
         return [
             { role: 'system', content: 'You are a helpful writing assistant. Respond only with the processed text, no explanations.' },

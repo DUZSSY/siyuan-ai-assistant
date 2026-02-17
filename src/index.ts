@@ -9,6 +9,7 @@ import { FloatingToolbar } from './libs/floating-toolbar';
 import { ContextMenuManager } from './libs/context-menu';
 import { showDialog } from './libs/dialog';
 import type { AIOperationType } from './types';
+import { DEFAULT_PROMPTS } from './types';
 import './index.scss';
 
 const PLUGIN_ID = 'siyuan-ai-assistant';
@@ -185,7 +186,7 @@ export default class AIAssistantPlugin extends Plugin {
 
     private initContextMenu() {
         this.contextMenuManager = new ContextMenuManager({
-            onOperation: async (type, blockId, blockContent) => {
+            onOperation: async (type, blockId, blockContentFromDOM) => {
                 // 确保 AI 提供商已配置
                 if (!await this.ensureProviderConfigured()) {
                     alert(this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
@@ -193,22 +194,93 @@ export default class AIAssistantPlugin extends Plugin {
                     return;
                 }
 
-                if (!blockContent || blockContent.trim().length === 0) {
-                    alert(this.i18n?.messages?.blockContentEmpty || '块内容为空');
+                if (!blockId) {
+                    alert(this.i18n?.messages?.blockContentEmpty || '无法获取块ID');
                     return;
                 }
 
                 try {
-                    const response = await aiService.processText(blockContent, type);
-                    // 右键菜单场景：isFullBlock 标记为 true，表示修改整个块
-                    this.showDiffViewer(blockContent, response.content, type, blockId, '', -1, -1, true);
-                } catch (error) {
-                    const errorMsg = error instanceof Error ? error.message : String(error);
-                    if (errorMsg.includes('not configured')) {
-                        alert(this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
+                    let blockContent: string;
+                    
+                    // 优先使用从 DOM 传递的内容（右键菜单点击时从 DOM 获取）
+                    if (blockContentFromDOM && blockContentFromDOM.trim().length > 0) {
+                        blockContent = blockContentFromDOM;
                     } else {
-                        alert((this.i18n?.messages?.error || '操作失败') + ': ' + errorMsg);
+                        // 尝试使用 blockService 获取块内容（备用方案）
+                        const blockInfo = await blockService.getBlockContent(blockId);
+                        if (!blockInfo || (!blockInfo.markdown && !blockInfo.content)) {
+                            alert(this.i18n?.messages?.blockContentEmpty || '块内容为空');
+                            return;
+                        }
+                        // 优先使用 markdown，其次使用 content
+                        blockContent = blockInfo.markdown || blockInfo.content;
                     }
+                    
+                    if (!blockContent || blockContent.trim().length === 0) {
+                        alert(this.i18n?.messages?.blockContentEmpty || '块内容为空');
+                        return;
+                    }
+
+                    // 获取自定义按钮的 prompt
+                    const settings = settingsService.getSettings();
+                    // 从 type (custom1, custom2, custom3) 提取索引获取对应按钮
+                    let customPrompt: string | undefined;
+                    if (type.startsWith('custom')) {
+                        const customIndex = parseInt(type.replace('custom', '')) - 1;
+                        if (customIndex >= 0 && customIndex < settings.customButtons.length) {
+                            customPrompt = settings.customButtons[customIndex]?.prompt;
+                        }
+                    }
+                    
+                    // 先显示 Diff 窗口，显示"正在处理"状态
+                    this.showDiffViewer(blockContent, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), type, blockId, '', -1, -1, true);
+                    
+                    // 然后执行 AI 处理
+                    const response = await aiService.processText(blockContent, type, customPrompt);
+                    
+                    // 更新 Diff 窗口显示结果
+                    this.updateDiffViewer(response.content);
+                } catch (error) {
+                    let errorMsg = this.i18n?.messages?.error || '处理失败';
+                    
+                    if (error instanceof Error) {
+                        const errorText = error.message.toLowerCase();
+                        
+                        // 超时错误
+                        if (errorText.includes('timeout') || errorText.includes('aborted') || errorText.includes('etimedout')) {
+                            errorMsg = this.i18n?.messages?.timeoutError || '请求超时（180秒），请检查网络连接或稍后重试';
+                        }
+                        // 网络错误
+                        else if (errorText.includes('network') || errorText.includes('fetch') || errorText.includes('enetunreach') || errorText.includes('econnrefused')) {
+                            errorMsg = this.i18n?.messages?.networkError || '网络错误，请检查网络连接';
+                        }
+                        // 未配置
+                        else if (errorText.includes('not configured')) {
+                            errorMsg = this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置';
+                        }
+                        // 认证错误
+                        else if (errorText.includes('auth') || errorText.includes('api key') || errorText.includes('unauthorized') || errorText.includes('401')) {
+                            errorMsg = this.i18n?.messages?.authError || 'API密钥无效或已过期，请检查配置';
+                        }
+                        // 频率限制
+                        else if (errorText.includes('rate limit') || errorText.includes('too many') || errorText.includes('429')) {
+                            errorMsg = this.i18n?.messages?.rateLimitError || '请求过于频繁，请稍后再试';
+                        }
+                        // AI提供商错误
+                        else if (errorText.includes('500') || errorText.includes('502') || errorText.includes('503') || errorText.includes('bad gateway') || errorText.includes('service unavailable')) {
+                            errorMsg = this.i18n?.messages?.providerError || 'AI提供商服务异常，请稍后重试';
+                        }
+                        // 模型错误
+                        else if (errorText.includes('model') || errorText.includes('invalid model') || errorText.includes('model not found')) {
+                            errorMsg = this.i18n?.messages?.modelError || '模型处理失败，请重试或更换模型';
+                        }
+                        // 其他错误
+                        else {
+                            errorMsg = `${this.i18n?.messages?.error || '处理失败'}：${error.message}`;
+                        }
+                    }
+                    
+                    alert(errorMsg);
                 }
             },
             onOpenSettings: () => this.openSettings(),
@@ -259,6 +331,7 @@ export default class AIAssistantPlugin extends Plugin {
     private showDiffViewer(original: string, modified: string, operation: AIOperationType, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number, isFullBlock: boolean = false) {
         if (this.diffDialog) {
             this.diffDialog.destroy();
+            this.diffDialog = null;
         }
 
         const targetBlockId = blockId;
@@ -361,26 +434,47 @@ export default class AIAssistantPlugin extends Plugin {
         });
 
         // 重新生成请求
-        this.currentDiffViewer.$on('regenerate', async (event: CustomEvent<{ instruction: string; original: string; currentModified: string }>) => {
-            const { instruction, original, currentModified } = event.detail;
-            
-            this.updateDiffViewer('⏳ 正在重新生成...');
-            
+        this.currentDiffViewer.$on('regenerate', async (event: CustomEvent<{ instruction: string; original: string; currentModified: string; operationType: AIOperationType }>) => {
+            const { instruction, original, currentModified, operationType } = event.detail;
+
+            this.updateDiffViewer('⏳ ' + (this.i18n?.regenerating || '正在重新生成...'));
+
             try {
+                // 获取原始操作提示词
+                const settings = settingsService.getSettings();
+                let originalPrompt = '';
+
+                if (operationType.startsWith('custom')) {
+                    // 自定义按钮：从 customButtons 中获取
+                    const customBtnIndex = parseInt(operationType.replace('custom', '')) - 1;
+                    if (customBtnIndex >= 0 && customBtnIndex < settings.customButtons.length) {
+                        originalPrompt = settings.customButtons[customBtnIndex].prompt;
+                    }
+                } else {
+                    // 内置操作：优先使用用户设置的，否则使用默认
+                    originalPrompt = settings.operationPrompts?.[operationType] || DEFAULT_PROMPTS[operationType] || '';
+                }
+
                 const messages = [
-                    { 
-                        role: 'system' as const, 
-                        content: '你是一位专业的写作助手。请根据用户的要求，结合原文，生成更好的内容。只输出生成后的文本，不要有任何解释。' 
+                    {
+                        role: 'system' as const,
+                        content: '你是一位专业的写作助手。请根据用户的原始指令和要求，结合原文和当前已修改的版本，生成更好的内容。只输出生成后的文本，不要有任何解释。'
                     },
-                    { 
-                        role: 'user' as const, 
-                        content: `【原文】
+                    {
+                        role: 'user' as const,
+                        content: `【原始指令】（这是最初触发操作的AI提示词）
+${originalPrompt || '（无特定指令）'}
+
+【原文】
 ${original}
 
-【用户要求】
+【当前版本】（这是之前AI根据原始指令生成的结果，用户觉得需要改进）
+${currentModified}
+
+【用户改进要求】
 ${instruction}
 
-请根据要求重新生成内容，直接输出文本，无需解释。` 
+请综合原始指令、原文内容和当前版本，根据用户的改进要求生成更好的内容。直接输出文本，无需解释。`
                     }
                 ];
                 
@@ -421,22 +515,36 @@ ${instruction}
             }
         });
 
-        const operationNames: Record<AIOperationType, string> = {
-            chat: '对话',
-            polish: '润色',
-            translate: '翻译',
-            summarize: '总结',
-            expand: '扩写',
-            condense: '精简',
-            rewrite: '改写',
-            continue: '续写',
-            custom1: '自定义1',
-            custom2: '自定义2',
-            custom3: '自定义3'
+        // 获取操作名称：自定义按钮从设置中读取实际名称
+        const getOperationName = (op: AIOperationType): string => {
+            const staticNames: Record<AIOperationType, string> = {
+                chat: '对话',
+                polish: '润色',
+                translate: '翻译',
+                summarize: '总结',
+                expand: '扩写',
+                condense: '精简',
+                rewrite: '改写',
+                continue: '续写',
+                custom1: '自定义 1',
+                custom2: '自定义 2',
+                custom3: '自定义 3'
+            };
+            
+            // 如果是自定义按钮，从设置中读取实际名称
+            if (op.startsWith('custom')) {
+                const settings = settingsService.getSettings();
+                const customBtn = settings.customButtons.find(b => b.id === op);
+                if (customBtn) {
+                    return customBtn.name;
+                }
+            }
+            
+            return staticNames[op];
         };
 
         this.diffDialog = showDialog({
-            title: `${operationNames[operation] || 'AI'}结果 - 差异对比`,
+            title: `${getOperationName(operation)}结果 - 差异对比`,
             content: container,
             width: '800px',
             height: '600px',

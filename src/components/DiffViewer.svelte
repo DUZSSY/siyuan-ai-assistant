@@ -20,7 +20,7 @@
   const dispatch = createEventDispatcher<{
     apply: string;
     cancel: void;
-    regenerate: { instruction: string; original: string; currentModified: string };
+    regenerate: { instruction: string; original: string; currentModified: string; operationType: AIOperationType };
     switchModel: string;
   }>();
 
@@ -34,30 +34,49 @@
   
   let providers: AIProvider[] = [];
   let currentProvider: AIProvider | null = null;
+  let customButtonNames: Record<string, string> = {};
 
-  // 操作类型名称映射
-  $: operationNames = {
-    chat: i18n.operations?.chat || '对话',
-    polish: i18n.operations?.polish || '润色',
-    translate: i18n.operations?.translate || '翻译',
-    summarize: i18n.operations?.summarize || '总结',
-    expand: i18n.operations?.expand || '扩写',
-    condense: i18n.operations?.condense || '精简',
-    rewrite: i18n.operations?.rewrite || '改写',
-    continue: i18n.operations?.continue || '续写',
-    custom1: i18n.operations?.custom1 || '自定义1',
-    custom2: i18n.operations?.custom2 || '自定义2',
-    custom3: i18n.operations?.custom3 || '自定义3'
-  };
+  // 获取操作名称：自定义按钮从设置中读取实际名称
+  function getOperationName(op: AIOperationType): string {
+    const staticNames: Record<AIOperationType, string> = {
+      chat: i18n.operations?.chat || '对话',
+      polish: i18n.operations?.polish || '润色',
+      translate: i18n.operations?.translate || '翻译',
+      summarize: i18n.operations?.summarize || '总结',
+      expand: i18n.operations?.expand || '扩写',
+      condense: i18n.operations?.condense || '精简',
+      rewrite: i18n.operations?.rewrite || '改写',
+      continue: i18n.operations?.continue || '续写',
+      custom1: '自定义 1',
+      custom2: '自定义 2',
+      custom3: '自定义 3'
+    };
+    
+    if (op.startsWith('custom') && customButtonNames[op]) {
+      return customButtonNames[op];
+    }
+    
+    return staticNames[op];
+  }
 
   onMount(() => {
     refreshProviderInfo();
+    loadCustomButtonNames();
   });
 
   function refreshProviderInfo() {
     const settings = settingsService.getSettings();
     providers = settings.providers;
     currentProvider = settingsService.getCurrentProvider();
+  }
+  
+  function loadCustomButtonNames() {
+    const settings = settingsService.getSettings();
+    customButtonNames = {};
+    settings.customButtons.forEach(btn => {
+      // 加载所有自定义按钮的名称，无论是否启用
+      customButtonNames[btn.id] = btn.name;
+    });
   }
 
   $: {
@@ -99,7 +118,8 @@
     dispatch('regenerate', {
       instruction: regenerateInstruction,
       original: displayOriginal,
-      currentModified: modified
+      currentModified: modified,
+      operationType: operationType
     });
     regenerateInstruction = '';
     showRegeneratePanel = false;
@@ -130,7 +150,7 @@
   <!-- Header -->
   <div class="diff-header">
     <div class="diff-title">
-      <span>📊 {operationNames[operationType] || 'AI处理'}</span>
+      <span>📊 {getOperationName(operationType)}</span>
       
       <!-- 模型选择器 -->
       <div class="model-selector">
@@ -213,7 +233,8 @@
   {#if isLoading}
     <div class="loading-content">
       <div class="loading-spinner">⏳</div>
-      <p>{i18n.diff?.processing || 'Processing...'}</p>
+      <p>{i18n.messages?.staged || '模型暂存中，请稍候...'}</p>
+      <p class="loading-hint">{i18n.diff?.processing || 'Processing...'}</p>
     </div>
   {:else}
     <div class="diff-content-inline">
@@ -283,11 +304,24 @@
     &:hover { background: var(--b3-theme-hover, #f0f0f0); }
   }
   
-  .model-dropdown {
-    position: absolute; top: 100%; left: 0; z-index: 100;
-    background: var(--b3-theme-background, #fff); border: 1px solid var(--b3-border-color, #e0e0e0);
-    border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); min-width: 180px; max-height: 200px; overflow-y: auto; margin-top: 4px;
+.model-dropdown {
+  position: absolute; top: 100%; left: 0; z-index: 100;
+  background: var(--b3-theme-background, #fff); border: 1px solid var(--b3-border-color, #e0e0e0);
+  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); min-width: 180px; max-height: 200px; overflow-y: auto; margin-top: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--b3-theme-on-surface, #ccc) transparent;
+  &::-webkit-scrollbar {
+    width: 6px;
   }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--b3-theme-on-surface, #ccc);
+    border-radius: 3px;
+  }
+}
   
   .dropdown-item {
     padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px;
@@ -328,7 +362,9 @@
   .legend-color.insert { background: rgba(34, 197, 94, 0.3); }
   
   .loading-content { padding: 60px; text-align: center; }
-  .loading-spinner { font-size: 48px; margin-bottom: 16px; }
+  .loading-spinner { font-size: 48px; margin-bottom: 16px; animation: spin 2s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .loading-hint { font-size: 12px; color: var(--b3-theme-on-surface, #666); margin-top: 8px; }
   
   .regenerate-panel { background: var(--b3-theme-surface, #f5f5f5); border-top: 1px solid var(--b3-border-color, #e0e0e0); padding: 16px; }
   .regenerate-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 600; font-size: 14px; }
