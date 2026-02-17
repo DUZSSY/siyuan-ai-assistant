@@ -125,8 +125,17 @@
     "connectionSuccess": "连接成功",
     "connectionFailed": "连接失败",
     "processing": "处理中...",
-    "error": "处理失败，请检查配置",
-    "noSelection": "请先选择文本"
+    "staged": "模型暂存中，请稍候...",
+    "error": "处理失败",
+    "noSelection": "请先选择文本",
+    "blockContentEmpty": "块内容为空，无法处理",
+    "timeoutError": "请求超时（180秒），请检查网络连接或稍后重试",
+    "networkError": "网络错误，请检查网络连接",
+    "providerError": "AI提供商返回错误，请检查配置或稍后重试",
+    "rateLimitError": "请求过于频繁，请稍后再试",
+    "authError": "API密钥无效或已过期，请检查配置",
+    "modelError": "模型处理失败，请重试或更换模型",
+    "unknownError": "发生未知错误，请重试"
   },
   "diff": {
     "title": "差异对比",

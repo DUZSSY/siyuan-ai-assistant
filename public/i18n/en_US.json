@@ -125,8 +125,17 @@
     "connectionSuccess": "Connection successful",
     "connectionFailed": "Connection failed",
     "processing": "Processing...",
-    "error": "Processing failed, please check configuration",
-    "noSelection": "Please select text first"
+    "staged": "Model is processing, please wait...",
+    "error": "Processing failed",
+    "noSelection": "Please select text first",
+    "blockContentEmpty": "Block content is empty, cannot process",
+    "timeoutError": "Request timeout (180s), please check network connection or try again later",
+    "networkError": "Network error, please check your network connection",
+    "providerError": "AI provider returned an error, please check configuration or try again later",
+    "rateLimitError": "Too many requests, please try again later",
+    "authError": "API key is invalid or expired, please check configuration",
+    "modelError": "Model processing failed, please retry or switch model",
+    "unknownError": "An unknown error occurred, please retry"
   },
   "diff": {
     "title": "Diff View",
