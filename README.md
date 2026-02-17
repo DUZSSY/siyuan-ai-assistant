@@ -12,13 +12,6 @@
 - 🎨 **Smart Floating Toolbar**: Auto-appears on text selection, draggable and pinnable
 - 🔒 **Privacy First**: API keys stored locally, supports Ollama local deployment
 
-## Installation
-
-1. Download `package.zip`
-2. Extract to SiYuan Note's `data/plugins/siyuan-ai-assistant/` directory
-3. Restart SiYuan Note
-4. Configure AI provider in settings
-
 ## Quick Start
 
 ### Method 1: Floating Toolbar (Recommended)
@@ -32,9 +25,6 @@
 1. Right-click the block icon
 2. Select AI operation
 3. View Diff comparison, then apply
-
-### Method 3: Keyboard Shortcut
-- `Alt+Cmd+A`: Open/close AI Assistant settings panel
 
 ## Configuration
 
@@ -123,7 +113,19 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 [View full changelog](CHANGELOG.md)
 
+## 🤝 Contributing
+
+Issues and Pull Requests are welcome!
+
 ## 📄 License
+
+MIT License
+
+## 🔗 Links
+
+- [GitHub Repository](https://github.com/DUZSSY/siyuan-ai-assistant)
+- [SiYuan Note Official](https://b3log.org/siyuan)
+- [SiYuan Community](https://ld246.com/tags/siyuan)
 
 MIT License
 

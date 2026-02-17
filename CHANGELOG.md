@@ -26,25 +26,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.14] - 2026-02-15
 
 ### 🐛 Fixed
+- 修复右键菜单不显示的问题（适配新版思源事件结构）
 - Fixed context menu not showing issue (adapted to new SiYuan event structure)
+- 增强 Ctrl/Cmd+A 选中块弹出浮窗的逻辑
 - Enhanced Ctrl/Cmd+A selection logic for floating toolbar popup
+- 修复右键菜单获取块内容为空的问题
 - Fixed right-click menu getting empty block content
+- 右键菜单根据工具栏设置动态显示按钮
 - Right-click menu now dynamically displays buttons based on toolbar settings
 
 ### ✨ Added
+- 增加第二种测试AI线路作为备用方案
 - Added second test AI connection as fallback option
 
 ### 📝 Changed
+- 版本升级 (0.1.13 → 0.1.14)
 - Version bump (0.1.13 → 0.1.14)
 
 ## [0.1.13] - 2026-02-15
 
 ### 🐛 Fixed
+- 修复 i18n 问题：插件现在能根据思源笔记的语言设置正确显示中文/英文
 - Fixed i18n issue: plugin now correctly displays in English/Chinese based on SiYuan Note's language settings
+- 修复浮动工具栏按钮文本、右键菜单项、聊天面板、Diff 查看器和设置面板的国际化支持
 - Fixed floating toolbar button text, context menu items, chat panel, diff viewer, and settings panel all support internationalization
+- 修复工具栏提示文字、弹窗和对话框标题的国际化问题
 - Fixed toolbar tooltips, alerts, and dialog titles now use i18n properly
 
 ### 📝 Changed
+- 版本升级 (0.1.12 → 0.1.13)
 - Version bump (0.1.12 → 0.1.13)
 
 ## [0.1.12] - 2026-02-14
@@ -140,82 +150,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.8] - 2025-02-13
 
 ### 🐛 Fixed
+- 更新插件图片以符合市场要求
 - Updated plugin images to meet bazaar requirements
+- 修复 icon.png 和 preview.png 尺寸问题
 - Fixed icon.png and preview.png size issues
+- 更新描述和文档
 - Updated description and documentation
-- Version bump for bazaar submission
 
 ### 📝 Changed
+- 版本号更新 (0.1.7 → 0.1.8)
 - Version bump (0.1.7 → 0.1.8)
 
 ## [0.1.7] - 2025-02-13
 
 ### 🐛 Fixed
+- 更新插件图片以符合市场要求
 - Updated plugin images to meet bazaar requirements
+- 修复 icon.png 和 preview.png 尺寸问题
 - Fixed icon.png and preview.png size issues
+- 更新描述和文档
 - Updated description and documentation
 
 ### 📝 Changed
+- 版本号更新
 - Version bump for bazaar submission
 
 ## [0.1.6] - 2025-02-13
 
 ### 🐛 Fixed
+- 修复浮动工具栏在禁用后仍可唤起的 Bug
 - Fixed floating toolbar still working after plugin disabled in bazaar
+- 修复右键菜单不显示的问题
 - Fixed context menu not showing (wrong settings retrieval method)
+- 修复 ContextMenuManager 缺少 destroy 方法导致的错误
 - Fixed ContextMenuManager missing destroy() method causing TypeError on unload
+- 修复浮动工具栏事件监听器泄露导致的重复工具栏问题
 - Fixed FloatingToolbar event listener leak causing multiple toolbars on plugin toggle
+- 修复 eventBus 监听器未正确移除的问题
 - Fixed eventBus listener not being removed on plugin unload
+- 修复 uninstall 方法使用错误的存储键名
 - Fixed uninstall() using wrong storage key (PLUGIN_ID → STORAGE_KEY)
+- 移除所有调试日志（45处）
 - Removed all debug console logs (45 instances)
+- 清理打包的多余文件 icon.png.txt
 - Cleaned up packaged icon.png.txt file
 
 ### 📝 Changed
+- 版本号遵循 semver 规范（0.1.5.1 → 0.1.6）
 - Version number now follows semver (0.1.5.1 → 0.1.6)
 
 ## [0.1.5.1] - 2025-02-13
 
 ### 🐛 Fixed
+- 移除未使用的 toggleDock() 方法和顶部栏按钮
 - Removed unused toggleDock() method and top bar button
+- 移除调试 console.log 语句
 - Removed debug console.log statements
+- 添加正确的 uninstall() 方法用于清理配置
 - Added proper uninstall() method for config cleanup
+- 修复插件禁用时组件清理问题（不再出现重复工具栏）
 - Fixed component cleanup on plugin disable (no more duplicate toolbars)
 
 ### ✨ Added
+- 添加 disabledInPublish 到 plugin.json
 - Added disabledInPublish to plugin.json
 
 ### 📝 Changed
+- README.md 更新为英文
 - README.md updated to English
+- LICENSE 替换为正确的 MIT 文本
 - LICENSE replaced with proper MIT text
 
 ## [0.1.5] - 2025-02-13
 
 ### ✨ Added
+- 新增可拖拽浮动工具栏和置顶功能
 - Draggable floating toolbar with pin functionality
+- 置顶按钮保持工具栏固定位置
 - Pin button to keep toolbar fixed in position
+- 关闭按钮 (✕) 用于手动关闭工具栏
 - Close button (✕) for manual toolbar dismissal
+- 拖拽手柄 (⋮⋮) 方便工具栏重新定位
 - Drag handle (⋮⋮) for easy toolbar repositioning
 
 ### 🐛 Fixed
+- 基于索引定位的精准文本替换
 - Precise text replacement with index-based positioning
+- 修复 Diff 查看器显示整个块而非选中文本的问题
 - Fixed Diff viewer showing full block instead of selected text
+- 支持多相同字符定位
 - Multiple same-character positioning support
+- 置顶时工具栏自动隐藏
 - Toolbar auto-hide when pinned
 
 ### 🎨 Improved
+- 优化工具栏位置避免遮挡选中文本
 - Better toolbar positioning to avoid covering selected text
+- Diff 弹窗现在将选中文本显示为"原文"
 - Diff popup now shows selected text as "original"
+- 增强浮动工具栏用户体验
 - Enhanced user experience with floating toolbar
 
 ## [0.1.0] - 2025-02-12
 
-### 🎉 Initial Release
+### 🎉 初始版本发布
+- 支持多AI提供商（OpenAI、Ollama、DeepSeek、Moonshot、智谱AI）
 - Multi-AI provider support (OpenAI, Ollama, DeepSeek, Moonshot, Zhipu AI)
+- 文本处理：润色、翻译、总结、扩写、精简、改写、续写
 - Text processing: polish, translate, summarize, expand, condense, rewrite, continue
+- 支持历史保存的对话式AI
 - Conversational AI with history saving
+- Diff 查看器支持逐段接受/拒绝
 - Diff viewer with accept/reject per segment
+- 快速访问浮动工具栏
 - Floating toolbar for quick access
+- 右键菜单集成
+- 右键菜单集成
 - Context menu integration
+- 聊天界面顶部面板
 - Top panel for chat interface
+- 提供商配置设置面板
 - Settings panel for provider configuration
+- i18n 支持（中文和英文）
 - i18n support (Chinese and English)
