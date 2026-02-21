@@ -5,8 +5,10 @@
 ## Core Features
 
 - 📝 **Block-Level AI Editing**: Select any text block and polish, translate, or summarize with one click
+- 💬 **Direct Chat Dialog**: Chat with AI using natural language for custom text modifications
 - 🤖 **Multi-AI Provider Support**: OpenAI, Ollama, DeepSeek, Moonshot, Zhipu AI, etc.
 - ✨ **7 Smart Text Operations**: Polish, translate, summarize, expand, condense, rewrite, continue
+- 🔧 **3 Custom Buttons**: Configure your own AI operations with custom prompts
 - 📊 **Visual Diff Comparison**: Clearly shows modifications (deletions in red, additions in green)
 - 🎯 **Precise Text Replacement**: Accurate positioning, supports multiple identical characters
 - 🎨 **Smart Floating Toolbar**: Auto-appears on text selection, draggable and pinnable
@@ -15,16 +17,38 @@
 ## Quick Start
 
 ### Method 1: Floating Toolbar (Recommended)
+
 1. Select any text in SiYuan Note
 2. The floating toolbar automatically appears near the selected text
-3. Click the AI operation you need (polish/translate/summarize, etc.)
+3. Click the AI operation you need:
+   - **Quick Actions**: Polish, Translate, Summarize, Expand, Condense, Rewrite, Continue
+   - **💬 Chat**: Open chat dialog for natural language text modification
+   - **Custom Buttons**: Your configured custom operations
 4. View modifications in the Diff popup, then apply
-   - ⚠️ **Known Issue**: The "original text" displayed on the left side of the Diff window may occasionally include content beyond the selected range. This is a display issue and does not affect the actual replacement
+
+**Diff Viewer Features**:
+- Accept/reject individual changes or apply all at once
+- Directly edit the modified text before applying
+- Regenerate with custom instructions
+
+**Chat Mode**:
+- Type natural language instructions (e.g., "make it more concise", "add technical details")
+- Access conversation history and previous sessions
+- Use quick action buttons within the chat interface
+
+- ⚠️ **Known Issue**: The "original text" displayed on the left side of the Diff window may occasionally include content beyond the selected range. This is a display issue and does not affect the actual replacement
 
 ### Method 2: Context Menu
+
 1. Right-click the block icon
 2. Select AI operation
 3. View Diff comparison, then apply
+
+### Method 3: Chat Panel
+
+1. Click the "💬 Chat" button in the floating toolbar
+2. Enter your modification request in natural language
+3. View results in Diff viewer and apply changes
 
 ## Configuration
 
@@ -65,7 +89,26 @@ Supported services:
 
 Add corresponding API keys in plugin settings.
 
-**💡 About Claude Support**  
+### Toolbar Configuration
+
+Customize which buttons appear in the floating toolbar:
+
+1. Open plugin settings → **Toolbar** tab
+2. Enable/disable standard operation buttons (polish, translate, etc.)
+3. Custom buttons configured in "Custom Prompts" tab will auto-sync here
+
+### Custom Buttons Configuration
+
+Create up to 3 personalized AI operation buttons:
+
+1. Open plugin settings → **Custom Prompts** tab
+2. Enable and configure each custom button:
+   - **Button Name**: Display name (e.g., "Convert to Table")
+   - **Icon**: Emoji icon (e.g., 📊)
+   - **AI Prompt**: Instructions for AI (e.g., "Convert the following content to table format")
+3. Save to auto-sync to the floating toolbar
+
+**💡 About Claude Support**
 Claude is supported through OpenAI API-compatible interface. Configuration:
 - API URL: `https://api.anthropic.com/v1`
 - Model: `claude-3-sonnet-20240229` or `claude-3-opus-20240229`
