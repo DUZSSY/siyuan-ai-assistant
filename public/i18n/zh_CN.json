@@ -22,6 +22,21 @@
     "custom2": "自定义2",
     "custom3": "自定义3"
   },
+  "customInput": {
+    "title": "💬 对话",
+    "selectedText": "选中的文字：",
+    "instruction": "请输入您的修改要求：",
+    "placeholder": "例如：简化语言、增加技术细节、改为正式语气...",
+    "emptyError": "请输入修改要求",
+    "history": "历史记录",
+    "send": "发送",
+    "newline": "换行",
+    "cancel": "取消",
+    "cancelBtn": "取消",
+    "confirmBtn": "确认",
+    "clearHistory": "清空历史",
+    "clearHistoryConfirm": "确定要清空所有历史记录吗？"
+  },
   "settings": {
     "title": "设置"
   },
@@ -146,6 +161,7 @@
     "condense": "精简",
     "rewrite": "改写",
     "continue": "续写",
+    "customInput": "对话",
     "custom1": "自定义1",
     "custom2": "自定义2",
     "custom3": "自定义3"
@@ -208,6 +224,8 @@
     "noHistory": "暂无历史对话",
     "welcome": "选择文本并使用快捷操作，或直接开始对话",
     "deleteConfirm": "确定要删除这个对话吗？",
+    "clearAll": "清空全部",
+    "clearAllConfirm": "确定要清空所有对话历史吗？此操作不可恢复。",
     "testPrompt": "你好，这是测试",
     "systemPrompt": "你是一个有帮助的AI助手。",
     "quickActions": {

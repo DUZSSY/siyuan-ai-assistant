@@ -2,6 +2,7 @@ import { Plugin, Dialog } from 'siyuan';
 import ChatPanel from './components/ChatPanel.svelte';
 import SettingsPanel from './components/SettingsPanel.svelte';
 import DiffViewer from './components/DiffViewer.svelte';
+import CustomPromptDialog from './components/CustomPromptDialog.svelte';
 import { settingsService } from './services/settings';
 import { aiService } from './services/ai';
 import { blockService } from './services/block';
@@ -21,6 +22,8 @@ export default class AIAssistantPlugin extends Plugin {
     private contextMenuManager: ContextMenuManager | null = null;
     private settingsDialog: Dialog | null = null;
     private diffDialog: Dialog | null = null;
+    private customInputDialog: Dialog | null = null;
+    private customPromptDialogComponent: any = null;
     private chatPanelComponent: ChatPanel | null = null;
     private currentDiffViewer: any = null;
     private currentOriginalText: string = '';  // 完整块内容用于差异显示
@@ -29,6 +32,7 @@ export default class AIAssistantPlugin extends Plugin {
     private currentSelectionEnd: number = -1;  // 选中文字在原文中的结束索引
     private displayTextForDiff: string = '';  // 用于Diff窗口显示的原文（选中文字或整个块）
     private isFullBlockReplace: boolean = false;  // 标记是否为整块替换（右键菜单场景）
+    private currentOperation: AIOperationType = 'polish';  // 当前操作类型，用于模型切换时重新处理
     private blockIconClickHandler: ((event: CustomEvent) => void) | null = null; // eventBus监听器引用
 
     async onload() {
@@ -167,6 +171,12 @@ export default class AIAssistantPlugin extends Plugin {
                 // 开始操作时隐藏浮动工具栏
                 this.floatingToolbar?.forceHide();
             },
+            onCustomInput: (selectedText, blockId, selectionStart, selectionEnd) => {
+                // 显示自定义输入对话框
+                this.showCustomInputDialog(selectedText, blockId, selectionStart, selectionEnd);
+                // 隐藏浮动工具栏
+                this.floatingToolbar?.forceHide();
+            },
             onOpenSettings: () => this.openSettings(),
             i18n: this.i18n
         });
@@ -283,6 +293,10 @@ export default class AIAssistantPlugin extends Plugin {
                     alert(errorMsg);
                 }
             },
+            onCustomInput: (blockId, blockContent) => {
+                // 右键菜单的自定义输入处理
+                this.showCustomInputDialogForBlock(blockId, blockContent);
+            },
             onOpenSettings: () => this.openSettings(),
             i18n: this.i18n
         });
@@ -342,6 +356,7 @@ export default class AIAssistantPlugin extends Plugin {
         this.currentSelectionStart = selectionStart ?? -1;
         this.currentSelectionEnd = selectionEnd ?? -1;
         this.isFullBlockReplace = isFullBlock; // 标记是否为整块替换
+        this.currentOperation = operation; // 保存操作类型，用于模型切换时重新处理
 
         // 设置用于Diff显示的原文：优先使用选中文字，否则使用整个块内容
         // 右键菜单场景（isFullBlock=true）：始终显示整个块内容
@@ -406,6 +421,18 @@ export default class AIAssistantPlugin extends Plugin {
                     const success = await blockService.updateBlock(targetBlockId, newContent);
                     if (!success) {
                         alert('应用修改失败，请重试');
+                    } else {
+                        // 更新保存的原始文本为最新内容，以便后续重新生成或切换模型时使用
+                        this.currentOriginalText = newContent;
+                        // 更新选中文字的位置（因为内容已改变）
+                        // 新的选中文字就是 AI 返回的结果
+                        this.currentSelectedText = result;
+                        // 重新计算位置：结果在 newContent 中的起始位置
+                        const resultStart = newContent.indexOf(result);
+                        if (resultStart >= 0) {
+                            this.currentSelectionStart = resultStart;
+                            this.currentSelectionEnd = resultStart + result.length;
+                        }
                     }
                 } else {
                     alert('无法确定要更新的文本块');
@@ -502,7 +529,12 @@ ${instruction}
                 
                 this.updateDiffViewer('⏳ 正在使用新模型重新处理...');
                 
-                const messages = aiService.buildOperationMessages(original, operation);
+                // 使用保存的选中文字（而非完整块内容）和当前操作类型
+                // 这确保切换模型后重新处理的是用户最初选中的文字
+                const messages = aiService.buildOperationMessages(
+                    this.displayTextForDiff, 
+                    this.currentOperation
+                );
                 const response = await aiService['adapter']?.chatCompletion(messages);
                 
                 if (response && response.content) {
@@ -588,5 +620,160 @@ ${instruction}
                 this.currentSelectionEnd = selectionEnd;
             }
         }
+    }
+
+    /**
+     * 显示自定义输入对话框（浮动工具栏版本）
+     */
+    private showCustomInputDialog(selectedText: string, blockId: string | null, selectionStart: number, selectionEnd: number): void {
+        if (this.customInputDialog) {
+            this.customInputDialog.destroy();
+            this.customInputDialog = null;
+        }
+
+        const container = document.createElement('div');
+
+        this.customPromptDialogComponent = new CustomPromptDialog({
+            target: container,
+            props: {
+                selectedText: selectedText,
+                i18n: this.i18n
+            }
+        });
+
+        // 监听确认事件
+        this.customPromptDialogComponent.$on('confirm', async (event: CustomEvent<string>) => {
+            const customPrompt = event.detail;
+            this.customInputDialog?.destroy();
+            this.customInputDialog = null;
+
+            // 获取完整块内容
+            let blockContent = '';
+            if (blockId) {
+                const fullBlockContent = await blockService.getBlockContent(blockId);
+                blockContent = fullBlockContent?.markdown || fullBlockContent?.content || '';
+            }
+            
+            if (!blockContent) {
+                blockContent = selectedText;
+            }
+
+            // 保存当前状态用于后续处理
+            this.currentOriginalText = blockContent;
+            this.currentSelectedText = selectedText;
+            this.currentSelectionStart = selectionStart;
+            this.currentSelectionEnd = selectionEnd;
+            this.isFullBlockReplace = false;
+            this.displayTextForDiff = selectedText;
+
+            // 显示 Diff 窗口
+            this.showDiffViewer(blockContent, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), 'customInput', blockId || undefined, selectedText, selectionStart, selectionEnd);
+
+            // 执行 AI 处理
+            try {
+                const finalPrompt = `${customPrompt}\n\n${selectedText}`;
+                const messages = [
+                    { role: 'system' as const, content: 'You are a helpful writing assistant.' },
+                    { role: 'user' as const, content: finalPrompt }
+                ];
+                
+                const response = await aiService['adapter']?.chatCompletion(messages);
+                
+                if (response && response.content) {
+                    this.updateDiffViewer(response.content);
+                }
+            } catch (error) {
+                alert(this.i18n?.messages?.error || '处理失败');
+            }
+        });
+
+        // 监听取消事件
+        this.customPromptDialogComponent.$on('cancel', () => {
+            this.customInputDialog?.destroy();
+            this.customInputDialog = null;
+        });
+
+        this.customInputDialog = showDialog({
+            title: this.i18n?.customInput?.title || '💬 对话',
+            content: container,
+            width: '520px',
+            height: 'auto',
+            destroyCallback: () => {
+                this.customInputDialog = null;
+                this.customPromptDialogComponent = null;
+            }
+        });
+    }
+
+    /**
+     * 显示自定义输入对话框（右键菜单版本 - 整块替换）
+     */
+    private showCustomInputDialogForBlock(blockId: string, blockContent: string): void {
+        if (this.customInputDialog) {
+            this.customInputDialog.destroy();
+            this.customInputDialog = null;
+        }
+
+        const container = document.createElement('div');
+
+        this.customPromptDialogComponent = new CustomPromptDialog({
+            target: container,
+            props: {
+                selectedText: blockContent,
+                i18n: this.i18n
+            }
+        });
+
+        // 监听确认事件
+        this.customPromptDialogComponent.$on('confirm', async (event: CustomEvent<string>) => {
+            const customPrompt = event.detail;
+            this.customInputDialog?.destroy();
+            this.customInputDialog = null;
+
+            // 保存当前状态
+            this.currentOriginalText = blockContent;
+            this.currentSelectedText = '';
+            this.currentSelectionStart = -1;
+            this.currentSelectionEnd = -1;
+            this.isFullBlockReplace = true;
+            this.displayTextForDiff = blockContent;
+
+            // 显示 Diff 窗口（整块替换模式）
+            this.showDiffViewer(blockContent, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), 'customInput', blockId, '', -1, -1, true);
+
+            // 执行 AI 处理
+            try {
+                const finalPrompt = `${customPrompt}\n\n${blockContent}`;
+                const messages = [
+                    { role: 'system' as const, content: 'You are a helpful writing assistant.' },
+                    { role: 'user' as const, content: finalPrompt }
+                ];
+                
+                const response = await aiService['adapter']?.chatCompletion(messages);
+                
+                if (response && response.content) {
+                    this.updateDiffViewer(response.content);
+                }
+            } catch (error) {
+                alert(this.i18n?.messages?.error || '处理失败');
+            }
+        });
+
+        // 监听取消事件
+        this.customPromptDialogComponent.$on('cancel', () => {
+            this.customInputDialog?.destroy();
+            this.customInputDialog = null;
+        });
+
+        this.customInputDialog = showDialog({
+            title: this.i18n?.customInput?.title || '💬 对话',
+            content: container,
+            width: '520px',
+            height: 'auto',
+            destroyCallback: () => {
+                this.customInputDialog = null;
+                this.customPromptDialogComponent = null;
+            }
+        });
     }
 }

@@ -22,6 +22,21 @@
     "custom2": "Custom 2",
     "custom3": "Custom 3"
   },
+  "customInput": {
+    "title": "💬 Chat",
+    "selectedText": "Selected text:",
+    "instruction": "Enter your modification request:",
+    "placeholder": "E.g., simplify language, add technical details, change to formal tone...",
+    "emptyError": "Please enter a modification request",
+    "history": "History",
+    "send": "Send",
+    "newline": "New line",
+    "cancel": "Cancel",
+    "cancelBtn": "Cancel",
+    "confirmBtn": "Confirm",
+    "clearHistory": "Clear History",
+    "clearHistoryConfirm": "Are you sure you want to clear all history?"
+  },
   "settings": {
     "title": "Settings"
   },
@@ -146,6 +161,7 @@
     "condense": "Condense",
     "rewrite": "Rewrite",
     "continue": "Continue",
+    "customInput": "Chat",
     "custom1": "Custom 1",
     "custom2": "Custom 2",
     "custom3": "Custom 3"
@@ -208,6 +224,8 @@
     "noHistory": "No conversation history",
     "welcome": "Select text and use quick actions, or start chatting directly",
     "deleteConfirm": "Are you sure you want to delete this conversation?",
+    "clearAll": "Clear All",
+    "clearAllConfirm": "Are you sure you want to clear all conversation history? This action cannot be undone.",
     "testPrompt": "Hello, this is a test",
     "systemPrompt": "You are a helpful AI assistant.",
     "quickActions": {

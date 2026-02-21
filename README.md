@@ -96,6 +96,15 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Recent Updates
 
+### v0.1.17
+- 💬 **New: Direct Chat Dialog** — Added standalone chat interface alongside existing quick action buttons
+  - "💬 Chat" button positioned at the far right with visual separator for clear distinction
+  - Supports real-time intelligent text modification through natural language instructions
+  - Chat history tracking with persistent conversation storage
+  - Smart input with customizable prompt suggestions
+- 🔗 Optimized connection stability and display performance
+- ⚡ Accelerated result display speed for smoother experience
+
 ### v0.1.16
 - ⏱️ Increased timeout from 60s to 180s for better large model support
 - 📝 Increased default max_tokens from 2048 to 4096 to avoid truncation
@@ -110,11 +119,6 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 - ✨ Extended platform support: backends added android, ios; frontends added browser-mobile, mobile
 - 🐛 Fixed custom buttons not receiving selected text
 - ⚠️ Mobile devices recommended to use AI provider APIs; Ollama LAN deployment requires CORS configuration
-
-### v0.1.14
-- 🐛 Fixed context menu not showing issue (adapted to new SiYuan event structure)
-- 🐛 Enhanced Ctrl/Cmd+A selection logic for floating toolbar popup
-- ✨ Right-click menu now dynamically displays buttons based on toolbar settings
 
 [View full changelog](https://github.com/DUZSSY/siyuan-ai-assistant/blob/main/CHANGELOG.md)
 

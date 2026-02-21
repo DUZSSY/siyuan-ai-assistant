@@ -6,6 +6,7 @@ import type { AIOperationType, AIProvider } from '../types';
 export interface FloatingToolbarOptions {
     onOperation: (type: AIOperationType, originalText: string, modifiedText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
     onOperationStart: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
+    onCustomInput?: (selectedText: string, blockId: string | null, selectionStart: number, selectionEnd: number) => void;
     onOpenSettings: () => void;
     i18n?: Record<string, any>;
 }
@@ -32,7 +33,7 @@ export class FloatingToolbar {
     // 事件处理器引用（用于正确移除监听器）
     private mouseUpHandler: ((e: MouseEvent) => void) | null = null;
     private mouseDownHandler: ((e: MouseEvent) => void) | null = null;
-    private scrollHandler: (() => void) | null = null;
+    private scrollHandler: ((e: Event) => void) | null = null;
     private keyDownHandler: ((e: KeyboardEvent) => void) | null = null;
     private mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
     private globalMouseUpHandler: ((e: MouseEvent) => void) | null = null;
@@ -75,7 +76,11 @@ export class FloatingToolbar {
             }
         };
 
-        this.scrollHandler = () => {
+        this.scrollHandler = (e: Event) => {
+            // 如果滚动事件来自下拉列表内部，则不关闭浮窗
+            if (this.modelDropdownElement && this.modelDropdownElement.contains(e.target as Node)) {
+                return;
+            }
             this.hide();
             this.hideModelDropdown();
         };
@@ -402,7 +407,8 @@ export class FloatingToolbar {
         if (buttonsContainer) {
             buttonsContainer.innerHTML = '';
 
-            const actions: { type: AIOperationType; label: string; icon: string; enabled: boolean }[] = [
+            // 1. 渲染7个默认操作按钮
+            const defaultActions = [
                 { type: 'polish', label: this.i18n.operations?.polish || '润色', icon: '✨', enabled: buttons.polish },
                 { type: 'translate', label: this.i18n.operations?.translate || '翻译', icon: '🌐', enabled: buttons.translate },
                 { type: 'summarize', label: this.i18n.operations?.summarize || '总结', icon: '📝', enabled: buttons.summarize },
@@ -412,25 +418,47 @@ export class FloatingToolbar {
                 { type: 'continue', label: this.i18n.operations?.continue || '续写', icon: '➡️', enabled: buttons.continue }
             ];
 
-            settings.customButtons.forEach((btn, index) => {
-                if (btn.enabled) {
-                    const btnKey = `custom${index + 1}` as keyof typeof buttons;
-                    actions.push({
-                        type: `custom${index + 1}` as AIOperationType,
-                        label: btn.name,
-                        icon: btn.icon,
-                        enabled: buttons[btnKey] || false
-                    });
+            defaultActions.forEach((action: { type: string; label: string; icon: string; enabled: boolean }) => {
+                if (action.enabled) {
+                    const btn = document.createElement('button');
+                    btn.className = 'toolbar-btn';
+                    btn.innerHTML = `<span class="icon">${action.icon}</span><span>${action.label}</span>`;
+                    btn.addEventListener('click', () => this.handleOperation(action.type as AIOperationType));
+                    buttonsContainer.appendChild(btn);
                 }
             });
 
-            actions.filter(a => a.enabled).forEach(action => {
-                const btn = document.createElement('button');
-                btn.className = 'toolbar-btn';
-                btn.innerHTML = `<span class="icon">${action.icon}</span><span>${action.label}</span>`;
-                btn.addEventListener('click', () => this.handleOperation(action.type));
-                buttonsContainer.appendChild(btn);
+            // 2. 渲染自定义按钮
+            settings.customButtons.forEach((btn: { enabled: boolean; icon: string; name: string }, index: number) => {
+                if (btn.enabled) {
+                    const btnKey = `custom${index + 1}` as keyof typeof buttons;
+                    if (buttons[btnKey]) {
+                        const button = document.createElement('button');
+                        button.className = 'toolbar-btn';
+                        button.innerHTML = `<span class="icon">${btn.icon}</span><span>${btn.name}</span>`;
+                        button.addEventListener('click', () => this.handleOperation(btnKey as AIOperationType));
+                        buttonsContainer.appendChild(button);
+                    }
+                }
             });
+
+            // 3. 渲染 customInput 按钮（带分隔符），始终在最后
+            if (buttons.customInput !== false) {
+                // 添加分隔符
+                const separator = document.createElement('span');
+                separator.className = 'toolbar-separator';
+                separator.textContent = '|';
+                separator.style.cssText = 'margin: 0 4px; color: var(--b3-theme-on-surface, #999); font-weight: 300;';
+                buttonsContainer.appendChild(separator);
+
+                // 添加 customInput 按钮
+                const customInputBtn = document.createElement('button');
+                customInputBtn.className = 'toolbar-btn';
+                const customInputLabel = this.i18n.operations?.customInput || '对话';
+                customInputBtn.innerHTML = `<span class="icon">💬</span><span>${customInputLabel}</span>`;
+                customInputBtn.addEventListener('click', () => this.handleOperation('customInput'));
+                buttonsContainer.appendChild(customInputBtn);
+            }
         }
     }
 
@@ -520,6 +548,15 @@ export class FloatingToolbar {
 
         document.body.appendChild(dropdown);
         this.modelDropdownElement = dropdown;
+        
+        // 阻止下拉列表的滚动事件冒泡，防止触发页面滚动导致浮窗关闭
+        dropdown.addEventListener('wheel', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
+        
+        dropdown.addEventListener('scroll', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
     }
 
     private showModelDropdown(): void {
@@ -713,6 +750,19 @@ export class FloatingToolbar {
 
     private async handleOperation(type: AIOperationType): Promise<void> {
         if (!this.currentSelection) return;
+
+        // 处理自定义输入类型的特殊逻辑
+        if (type === 'customInput') {
+            if (this.options.onCustomInput) {
+                this.options.onCustomInput(
+                    this.currentSelection,
+                    this.currentBlockId,
+                    this.currentSelectionStart,
+                    this.currentSelectionEnd
+                );
+            }
+            return;
+        }
 
         // 确保 AI 提供商已配置
         if (!aiService.isConfigured()) {

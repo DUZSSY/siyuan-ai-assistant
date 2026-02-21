@@ -3,6 +3,7 @@ import { settingsService } from '../services/settings';
 
 export interface ContextMenuOptions {
     onOperation: (type: AIOperationType, blockId: string, blockContent: string) => void;
+    onCustomInput?: (blockId: string, blockContent: string) => void;
     onOpenSettings: () => void;
     i18n?: Record<string, any>;
 }
@@ -103,17 +104,28 @@ export class ContextMenuManager {
         });
         
         // 如果没有启用的按钮，至少显示设置
-        if (aiSubmenu.length === 0) {
+        if (aiSubmenu.length === 0 && settings.toolbarButtons.customInput === false) {
             aiSubmenu.push({
                 label: `⚠️ ${this.i18n.messages?.noButtonsEnabled || '未启用任何按钮'}`,
                 click: () => {}
             });
         }
         
-        // 添加分隔线和设置选项
-        aiSubmenu.push({
-            type: 'separator'
-        });
+        // 添加分隔线 + 自定义输入按钮（对话）+ 分隔线
+        if (settings.toolbarButtons.customInput !== false && this.options.onCustomInput) {
+            aiSubmenu.push({
+                type: 'separator'
+            });
+            aiSubmenu.push({
+                label: `💬 ${this.i18n.operations?.customInput || '对话'}`,
+                click: () => this.options.onCustomInput!(blockId!, blockContent)
+            });
+            aiSubmenu.push({
+                type: 'separator'
+            });
+        }
+        
+        // 添加设置选项
         aiSubmenu.push({
             label: `⚙️ ${this.i18n.settings?.title || '设置'}`,
             click: () => this.options.onOpenSettings()

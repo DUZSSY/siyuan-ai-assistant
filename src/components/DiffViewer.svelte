@@ -47,6 +47,7 @@
       condense: i18n.operations?.condense || '精简',
       rewrite: i18n.operations?.rewrite || '改写',
       continue: i18n.operations?.continue || '续写',
+      customInput: i18n.operations?.customInput || '对话',
       custom1: '自定义 1',
       custom2: '自定义 2',
       custom3: '自定义 3'

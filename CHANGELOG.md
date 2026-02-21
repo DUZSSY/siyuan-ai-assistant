@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.17] - 2026-02-20
+
+### ✨ Added / 新增
+- 💬 **新增直接对话功能** — 在原有快捷按钮基础上增加独立对话界面
+  - "💬 对话"按钮显示在最右侧并带分隔符，与其他功能清晰区分
+  - 支持通过自然语言指令进行实时智能文本修改
+  - 对话历史记录功能，支持持久化存储多轮对话
+  - 智能输入框，支持自定义提示词和历史记录快速填充
+  - **New: Direct Chat Dialog** — Added standalone chat interface alongside existing quick action buttons
+  - "💬 Chat" button positioned at the far right with visual separator
+  - Supports real-time intelligent text modification through natural language
+  - Chat history tracking with persistent conversation storage
+  - Smart input with customizable prompt suggestions
+
+### 🔧 Improved / 优化
+- 🔗 优化连接稳定性和显示效果 / Optimized connection stability and display performance
+- ⚡ 加速结果显示速度，体验更流畅 / Accelerated result display speed
+- 🎯 对话模式采用严格的AI输出控制，避免无关引导语 / Stricter AI output control in chat mode
+
+### 🐛 Fixed / 修复
+- 修复 DiffViewer 中 customInput 操作标题显示为 undefined 的问题
+- Fixed DiffViewer title showing undefined for customInput operations
+- 修复自定义输入对话框标题为空的问题
+- Fixed empty dialog title in custom input dialogs
+
 ## [0.1.16] - 2026-02-17
 
 ### ✨ Added / 新增

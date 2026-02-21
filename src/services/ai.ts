@@ -46,12 +46,8 @@ export class AIService {
             }
         );
 
-        // 按字符流式返回（模拟流式效果）
-        for (const char of accumulatedContent) {
-            yield char;
-            // 小延迟以模拟流式效果
-            await new Promise(resolve => setTimeout(resolve, 10));
-        }
+        // 直接返回完整内容，无人工延迟
+        yield accumulatedContent;
     }
 
     async processText(text: string, operation: AIOperationType, customPrompt?: string): Promise<AIResponse> {
@@ -90,8 +86,16 @@ export class AIService {
         // 当 customPrompt 为 undefined 时使用默认 prompt；空字符串是有效值（允许用户设置空 prompt）
         const prompt = customPrompt !== undefined ? customPrompt : DEFAULT_PROMPTS[operation];
         
+        const systemPrompt = `你是专业写作助手。请严格遵守：
+1. 【绝对禁止】输出"好的"、"以下是"、"修改结果"等任何引导语
+2. 【绝对禁止】解释修改理由或添加总结
+3. 【必须直接】给出可替换原文的纯文本结果
+4. 【格式保持】保持原文的段落、换行、标点格式
+
+输出必须是纯文本，用户应可直接复制使用，无需二次处理。`;
+        
         return [
-            { role: 'system', content: 'You are a helpful writing assistant. Respond only with the processed text, no explanations.' },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: `${prompt}\n\n${text}` }
         ];
     }

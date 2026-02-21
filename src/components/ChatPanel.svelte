@@ -57,7 +57,30 @@
 
     try {
       const aiMessages: AIChatMessage[] = [
-        { role: 'system', content: 'You are a helpful assistant.' },
+        { 
+          role: 'system', 
+          content: `你是专业写作助手。请严格遵守：
+
+【核心规则】
+1. 【绝对禁止】输出"好的"、"以下是"、"修改结果"等任何引导语
+2. 【绝对禁止】解释修改理由、添加总结、或提供示例
+3. 【绝对禁止】在结果后附加额外说明（如"如果您需要...请告诉我"）
+4. 【必须直接】只给出可替换原文的纯文本结果
+5. 【格式保持】保持原文的段落、换行、标点格式
+
+【禁止示例】
+❌ "这句话翻译成英文是："
+❌ "**This is a test.**"
+❌ "如果您需要翻译成其他语言..."
+❌ "以下是修改后的内容："
+❌ "修改完成，以上结果保持了原文风格"
+
+【正确示例】
+原文：你好世界
+输出：Hello World
+
+输出必须是纯文本，用户应可直接复制使用，无需二次处理或删除任何内容。` 
+        },
         ...messages.map(m => ({ role: m.role, content: m.content }) as AIChatMessage)
       ];
 
@@ -195,6 +218,16 @@
       loadConversations();
     }
   }
+  
+  async function clearAllConversations() {
+    if (confirm(i18n.chat?.clearAllConfirm || 'Are you sure you want to clear all conversation history?')) {
+      await settingsService.clearAllConversations();
+      conversations = [];
+      if (currentConversationId) {
+        startNewChat();
+      }
+    }
+  }
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -273,6 +306,13 @@
           <div class="history-empty">{i18n.chat?.noHistory || 'No conversation history'}</div>
         {/if}
       </div>
+      {#if conversations.length > 0}
+        <div class="history-footer">
+          <button class="btn-clear-all" on:click={clearAllConversations}>
+            🗑️ {i18n.chat?.clearAll || 'Clear All'}
+          </button>
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -479,6 +519,30 @@
 
       &:hover {
         opacity: 1;
+      }
+    }
+
+    .history-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--b3-border-color);
+      display: flex;
+      justify-content: center;
+
+      .btn-clear-all {
+        background: none;
+        border: 1px solid var(--b3-border-color);
+        border-radius: 6px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--b3-theme-on-surface);
+        transition: all 0.2s;
+
+        &:hover {
+          background: var(--b3-theme-error-light, rgba(239, 68, 68, 0.1));
+          border-color: var(--b3-theme-error, #ef4444);
+          color: var(--b3-theme-error, #ef4444);
+        }
       }
     }
   }

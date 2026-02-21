@@ -68,7 +68,7 @@ export class ProxyService {
 
     /**
      * 代理流式聊天请求
-     * 使用非流式请求模拟流式效果
+     * 使用非流式请求，直接返回完整响应（无模拟延迟）
      */
     static async proxyStreamChatCompletion(
         provider: AIProvider,
@@ -78,14 +78,9 @@ export class ProxyService {
         try {
             // 使用非流式请求获取完整响应
             const response = await this.proxyChatCompletion(provider, messages);
-            const content = response.content;
             
-            // 模拟流式输出
-            const chunkSize = 3;
-            for (let i = 0; i < content.length; i += chunkSize) {
-                onEvent({ content: content.slice(i, i + chunkSize) });
-                await new Promise(r => setTimeout(r, 10));
-            }
+            // 直接返回完整内容，无人工延迟
+            onEvent({ content: response.content });
             onEvent({ done: true });
         } catch (error) {
             onEvent({ 

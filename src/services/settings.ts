@@ -139,11 +139,25 @@ export class SettingsService {
         } else {
             this.settings.conversations.push(conversation);
         }
+        
+        // 限制对话历史数量（最多保存50条），超出时删除最早的
+        const MAX_CONVERSATIONS = 50;
+        if (this.settings.conversations.length > MAX_CONVERSATIONS) {
+            // 按更新时间排序，保留最新的50条
+            this.settings.conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+            this.settings.conversations = this.settings.conversations.slice(0, MAX_CONVERSATIONS);
+        }
+        
         await this.saveSettings();
     }
 
     async deleteConversation(id: string): Promise<void> {
         this.settings.conversations = this.settings.conversations.filter(c => c.id !== id);
+        await this.saveSettings();
+    }
+    
+    async clearAllConversations(): Promise<void> {
+        this.settings.conversations = [];
         await this.saveSettings();
     }
 
@@ -220,8 +234,30 @@ export class SettingsService {
             customButtons: DEFAULT_CUSTOM_BUTTONS,
             toolbarButtons: DEFAULT_TOOLBAR_BUTTONS,
             enableLocalMode: true,
-            redactSensitiveInfo: false
+            redactSensitiveInfo: false,
+            customInputHistory: []
         };
+    }
+
+    // Custom Input History
+    getCustomInputHistory(): string[] {
+        return [...this.settings.customInputHistory];
+    }
+
+    async addCustomInputHistory(prompt: string): Promise<void> {
+        // 去重并限制历史记录数量（最多保存10条）
+        const history = this.settings.customInputHistory.filter(p => p !== prompt);
+        history.unshift(prompt);
+        if (history.length > 10) {
+            history.pop();
+        }
+        this.settings.customInputHistory = history;
+        await this.saveSettings();
+    }
+
+    async clearCustomInputHistory(): Promise<void> {
+        this.settings.customInputHistory = [];
+        await this.saveSettings();
     }
 }
 

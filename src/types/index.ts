@@ -60,7 +60,8 @@ export type AIOperationType =
     | 'continue'
     | 'custom1'
     | 'custom2'
-    | 'custom3';
+    | 'custom3'
+    | 'customInput';
 
 export interface OperationPrompt {
     type: AIOperationType;
@@ -82,6 +83,7 @@ export interface ToolbarButtonConfig {
     custom1: boolean;
     custom2: boolean;
     custom3: boolean;
+    customInput: boolean;
 }
 
 export interface CustomButton {
@@ -182,6 +184,9 @@ export interface PluginSettings {
     // Privacy settings
     enableLocalMode: boolean;
     redactSensitiveInfo: boolean;
+    
+    // Custom input prompt history
+    customInputHistory: string[];
 }
 
 // ==================== Block Types ====================
@@ -275,7 +280,8 @@ export const DEFAULT_PROMPTS: Record<AIOperationType, string> = {
     continue: '请延续以下文本续写后续内容。严格规则：1.保持风格和主题一致；2.逻辑连贯；3.只输出续写内容；4.不要添加任何解释或额外内容：',
     custom1: '',
     custom2: '',
-    custom3: ''
+    custom3: '',
+    customInput: ''
 };
 
 export const DEFAULT_CUSTOM_BUTTONS: CustomButton[] = [
@@ -294,5 +300,6 @@ export const DEFAULT_TOOLBAR_BUTTONS: ToolbarButtonConfig = {
     continue: false,
     custom1: false,
     custom2: false,
-    custom3: false
+    custom3: false,
+    customInput: true
 };
