@@ -11,9 +11,25 @@ export function isBrowserEnvironment(): boolean {
         return false;
     }
     
+    // 如果 UA 包含 Electron，则是桌面原生端，不应被视为受限浏览器环境
+    if (isElectron()) {
+        return false;
+    }
+
     // 通过协议判断：http:// 或 https:// 表示在浏览器地址栏中访问
     const protocol = window.location.protocol;
     return protocol === 'http:' || protocol === 'https:';
+}
+
+/**
+ * 检测是否为 Electron 桌面原生端
+ */
+export function isElectron(): boolean {
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+    const ua = navigator.userAgent.toLowerCase();
+    return ua.includes('electron') || ua.includes('siyuan-desktop');
 }
 
 /**
@@ -24,6 +40,11 @@ export function isMobileEnvironment(): boolean {
         return false;
     }
     
+    // 如果 UA 包含 Electron，排除在移动端之外
+    if (isElectron()) {
+        return false;
+    }
+
     const userAgent = navigator.userAgent.toLowerCase();
     return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(userAgent);
 }

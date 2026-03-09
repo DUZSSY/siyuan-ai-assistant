@@ -18,6 +18,10 @@ export class ContextMenuManager {
         this.i18n = options.i18n || {};
     }
 
+    setI18n(i18n: Record<string, any>): void {
+        this.i18n = i18n || {};
+    }
+
     /**
      * Inject AI menu into block icon menu
      */

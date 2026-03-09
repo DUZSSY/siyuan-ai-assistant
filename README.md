@@ -6,6 +6,8 @@
 
 - 📝 **Block-Level AI Editing**: Select any text block and polish, translate, or summarize with one click
 - 💬 **Direct Chat Dialog**: Chat with AI using natural language for custom text modifications
+- 🌊 **Streaming Response**: Real-time character-by-character display of AI-generated content with reasoning chain support
+- 📜 **Operation History**: Complete record of text processing with version timeline and diff comparison
 - 🤖 **Multi-AI Provider Support**: OpenAI, Ollama, DeepSeek, Moonshot, Zhipu AI, etc.
 - ✨ **7 Smart Text Operations**: Polish, translate, summarize, expand, condense, rewrite, continue
 - 🔧 **3 Custom Buttons**: Configure your own AI operations with custom prompts
@@ -66,7 +68,9 @@
 
 **🌐 Free Cloud Models Recommended** (No local deployment needed, available as of Feb 14, 2026):
 - **GPT-OSS 120B** - OpenAI's open-source large model
-- **Qwen3** - Latest version of Tongyi Qianwen
+- **Qwen3 / Qwen3.5** - Latest version of Tongyi Qianwen
+  - 💡 **Qwen3.5:4b** — Excellent local deployment option via Ollama (⭐recommended, 4b for 6GB+ VRAM, 27b for 24GB+ VRAM)
+  - ⚠️ *Note: Qwen3.5 series has longer reasoning time, please be patient*
 - **GLM-5** - Zhipu AI's next-generation model
 - **Gemini 3 Flash** - Google's lightweight fast model
 
@@ -83,11 +87,24 @@ Supported services:
 - **Custom OpenAI-compatible API** (supports any OpenAI API format service)
 
 **💡 Model Selection Guide:**
-- **Daily use (polish/translate/chat)**: GPT-5.2 Instant, Claude Sonnet 4.5, GLM-4-Flash (free tier)
+- **Daily use (polish/translate/chat)**: GPT-5.2 Instant, Claude Sonnet 4.5, GLM-4-Flash (free tier), Qwen3.5:4b
 - **Professional writing/complex reasoning**: GPT-5.2 Thinking, Claude Opus 4.6, GLM-5
 - **Maximum performance/coding**: GPT-5.2 Pro, Kimi K2.5
+- **Local deployment (privacy first)**: Qwen3.5:4b via Ollama — good quality with reasonable speed, longer reasoning time
 
 Add corresponding API keys in plugin settings.
+
+### Test Endpoints
+
+**⚠️ Two built-in test endpoints are available in the initial download routes:**
+
+- `test-ai-{region}-1` and `test-ai-{region}-2`
+
+**Important Notes:**
+- 🧪 **For testing only** — These endpoints are provided for feature testing purposes only
+- 📄 **Small text only** — Recommended for short text testing only
+- ❌ **No availability guarantee** — These are community-provided test routes and may become unavailable at any time
+- 🔧 **Not for production** — For reliable daily use, please configure your own API keys
 
 ### Toolbar Configuration
 
@@ -114,6 +131,31 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 - Model: `claude-3-sonnet-20240229` or `claude-3-opus-20240229`
 - Requires Anthropic API Key
 
+## ⚠️ Data Safety Warning
+
+**🚨 Important: Before using AI operations, please be aware of the following risks:**
+
+### AI Operations & Block Writing Risks
+
+- **AI may produce unexpected results**: The AI might delete, reorder, or significantly alter your original content. The plugin **cannot guarantee** complete preservation of your original formatting and content.
+
+- **Block-level replacement risk**: When applying AI-generated content, the entire block is replaced. If the AI output differs from your expectations (content loss, format changes, unintended deletions), the original content **cannot be automatically recovered**.
+
+- **Multi-paragraph content handling**: AI may generate multi-paragraph content. Currently, this is written to a single block. Please review carefully before applying.
+
+- **Network/API failures**: Request timeouts or API errors during processing may result in incomplete or corrupted content being written.
+
+### 🛡️ Protection Measures
+
+1. **Backup your document** before performing AI operations on important content
+2. **Review AI output carefully** in the Diff window before clicking "Apply Changes"
+3. **Test on non-critical content first** to understand how the AI handles your specific writing style
+4. **Use "Cancel" if unsure** — you can always regenerate or start over
+
+> 💡 **Recommendation**: For critical documents, export a backup copy from SiYuan (File → Export) before using AI features.
+
+---
+
 ## ⚠️ Disclaimer
 
 **Please read the following statements carefully before using this plugin:**
@@ -139,6 +181,17 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Recent Updates
 
+### v0.1.18
+- 📜 **New: Operation History** — Complete record of text processing workflow
+  - Save original and modified text for each AI operation (no truncation)
+  - Support recording regenerate and model switch chains
+  - Smart sampling: max 8 histories, 6 versions each (first 3 + last 3)
+  - Read-only view: display diff between original and any version
+- 🌊 **New: Streaming Response** — Real-time AI content display with reasoning chain support
+- 🎯 Optimized AI system prompts for better output format control
+- 🔧 Improved DiffViewer model dropdown scrolling experience
+- 🛡️ Enhanced error handling and edge case processing
+
 ### v0.1.17
 - 💬 **New: Direct Chat Dialog** — Added standalone chat interface alongside existing quick action buttons
   - "💬 Chat" button positioned at the far right with visual separator for clear distinction
@@ -156,12 +209,6 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 - 🔧 Fixed empty prompt handling for custom buttons
 - 🛡️ Added non-empty validation for custom button configuration
 - 📜 Fixed model dropdown scroll issue for long provider lists
-
-### v0.1.15
-- ✨ Added mobile proxy support for tablets and phones (tested on Huawei MatePad)
-- ✨ Extended platform support: backends added android, ios; frontends added browser-mobile, mobile
-- 🐛 Fixed custom buttons not receiving selected text
-- ⚠️ Mobile devices recommended to use AI provider APIs; Ollama LAN deployment requires CORS configuration
 
 [View full changelog](https://github.com/DUZSSY/siyuan-ai-assistant/blob/main/CHANGELOG.md)
 

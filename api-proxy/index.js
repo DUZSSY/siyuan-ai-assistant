@@ -78,10 +78,50 @@ function makeRequest(url, options, postData) {
   });
 }
 
+function makeStreamingRequest(url, options, postData, handlers) {
+  const parsedUrl = new URL(url);
+  const requestOptions = {
+    hostname: parsedUrl.hostname,
+    path: parsedUrl.pathname + parsedUrl.search,
+    method: options.method || 'GET',
+    headers: options.headers || {}
+  };
+
+  const req = https.request(requestOptions, (response) => {
+    if (handlers && handlers.onResponse) {
+      handlers.onResponse(response);
+    }
+
+    response.on('data', (chunk) => {
+      if (handlers && handlers.onData) {
+        handlers.onData(chunk);
+      }
+    });
+
+    response.on('end', () => {
+      if (handlers && handlers.onEnd) {
+        handlers.onEnd();
+      }
+    });
+  });
+
+  req.on('error', (error) => {
+    if (handlers && handlers.onError) {
+      handlers.onError(error);
+    }
+  });
+
+  if (postData) {
+    req.write(postData);
+  }
+
+  req.end();
+}
+
 // 主要 API 端点
 app.post('/v1/chat/completions', async (req, res) => {
   try {
-    const { messages, max_tokens = 300, temperature = 0.7 } = req.body;
+    const { messages, max_tokens = 300, temperature = 0.7, stream = false } = req.body;
     
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({
@@ -102,8 +142,73 @@ app.post('/v1/chat/completions', async (req, res) => {
       messages: messages,
       max_tokens: Math.min(max_tokens, 1000),
       temperature: Math.min(Math.max(temperature, 0), 1.0),
-      stream: false
+      stream: !!stream
     });
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      if (res.flushHeaders) {
+        res.flushHeaders();
+      }
+
+      makeStreamingRequest(
+        'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Length': Buffer.byteLength(requestBody)
+          }
+        },
+        requestBody,
+        {
+          onResponse: (upstream) => {
+            if (upstream.statusCode < 200 || upstream.statusCode >= 300) {
+              let errorBuf = '';
+              upstream.on('data', (chunk) => {
+                errorBuf += chunk.toString();
+              });
+              upstream.on('end', () => {
+                if (!res.writableEnded) {
+                  res.write(`data: ${JSON.stringify({ error: { message: `Zhipu stream error: ${errorBuf || upstream.statusCode}` } })}\n\n`);
+                  res.write('data: [DONE]\n\n');
+                  res.end();
+                }
+              });
+            }
+          },
+          onData: (chunk) => {
+            if (!res.writableEnded) {
+              res.write(chunk);
+            }
+          },
+          onEnd: () => {
+            if (!res.writableEnded) {
+              res.end();
+            }
+          },
+          onError: (error) => {
+            if (!res.writableEnded) {
+              res.write(`data: ${JSON.stringify({ error: { message: error.message } })}\n\n`);
+              res.write('data: [DONE]\n\n');
+              res.end();
+            }
+          }
+        }
+      );
+
+      req.on('close', () => {
+        if (!res.writableEnded) {
+          res.end();
+        }
+      });
+
+      return;
+    }
 
     const response = await makeRequest(
       'https://open.bigmodel.cn/api/paas/v4/chat/completions',

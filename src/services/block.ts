@@ -272,40 +272,46 @@ export class BlockService {
             let fullContent = blockInfo.content;
             
             if (!selectedText) {
-                return { success: true, content: fullContent };
+                return { success: false, error: '选中文字为空，无法执行精确替换' };
             }
 
-            // 策略1: 精确匹配（用户选中的文字和原文完全一致）
-            let escapedSelected = selectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            let regex = new RegExp(escapedSelected, '');
-            if (regex.test(fullContent)) {
-                const newContent = fullContent.replace(regex, newText);
-                return { success: true, content: newContent };
-            }
+// 策略1: 精确匹配（用户选中的文字和原文完全一致）
+    let escapedSelected = selectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let regex = new RegExp(escapedSelected, '');
+    if (regex.test(fullContent)) {
+      const newContent = fullContent.replace(regex, newText);
+      // 将多段内容转换为假换行（单换行），避免触发思源重建索引
+      const normalizedContent = newContent.replace(/\n\n+/g, '\n');
+      return { success: true, content: normalizedContent };
+    }
 
-            // 策略2: Trim后匹配（去除前后空格）
-            const trimmedSelected = selectedText.trim();
-            escapedSelected = trimmedSelected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            regex = new RegExp(escapedSelected, '');
-            if (regex.test(fullContent)) {
-                // 在trim后的位置替换，保留原文的空格格式
-                const beforeMatch = fullContent.substring(0, fullContent.indexOf(trimmedSelected));
-                const afterMatch = fullContent.substring(fullContent.indexOf(trimmedSelected) + trimmedSelected.length);
-                const newContent = beforeMatch + newText + afterMatch;
-                return { success: true, content: newContent };
-            }
+// 策略2: Trim后匹配（去除前后空格）
+    const trimmedSelected = selectedText.trim();
+    escapedSelected = trimmedSelected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    regex = new RegExp(escapedSelected, '');
+    if (regex.test(fullContent)) {
+      // 在trim后的位置替换，保留原文的空格格式
+      const beforeMatch = fullContent.substring(0, fullContent.indexOf(trimmedSelected));
+      const afterMatch = fullContent.substring(fullContent.indexOf(trimmedSelected) + trimmedSelected.length);
+      const newContent = beforeMatch + newText + afterMatch;
+      // 将多段内容转换为假换行（单换行），避免触发思源重建索引
+      const normalizedContent = newContent.replace(/\n\n+/g, '\n');
+      return { success: true, content: normalizedContent };
+    }
 
-            // 策略3: 模糊匹配 - 在trimmed全文中查找trimmed选中文字的位置
-            const trimmedFullContent = fullContent.trim();
-            const trimmedIndex = trimmedFullContent.indexOf(trimmedSelected);
-            if (trimmedIndex !== -1) {
-                // 计算原文中的对应位置
-                const beforeTrim = fullContent.substring(0, fullContent.indexOf(trimmedFullContent.substring(0, trimmedIndex > 0 ? trimmedIndex : 0)));
-                const afterTrimStart = fullContent.indexOf(trimmedFullContent) + trimmedIndex + trimmedSelected.length;
-                const afterTrim = fullContent.substring(afterTrimStart);
-                const newContent = beforeTrim + newText + afterTrim;
-                return { success: true, content: newContent };
-            }
+// 策略3: 模糊匹配 - 在trimmed全文中查找trimmed选中文字的位置
+    const trimmedFullContent = fullContent.trim();
+    const trimmedIndex = trimmedFullContent.indexOf(trimmedSelected);
+    if (trimmedIndex !== -1) {
+      // 计算原文中的对应位置
+      const beforeTrim = fullContent.substring(0, fullContent.indexOf(trimmedFullContent.substring(0, trimmedIndex > 0 ? trimmedIndex : 0)));
+      const afterTrimStart = fullContent.indexOf(trimmedFullContent) + trimmedIndex + trimmedSelected.length;
+      const afterTrim = fullContent.substring(afterTrimStart);
+      const newContent = beforeTrim + newText + afterTrim;
+      // 将多段内容转换为假换行（单换行），避免触发思源重建索引
+      const normalizedContent = newContent.replace(/\n\n+/g, '\n');
+      return { success: true, content: normalizedContent };
+    }
 
             // 策略4: 如果所有策略都失败，使用DOM选区进行精确替换
             return await this.smartReplaceByDOMSelection(blockId, selectedText, newText);
@@ -331,8 +337,7 @@ export class BlockService {
 
             const selection = window.getSelection();
             if (!selection || selection.rangeCount === 0) {
-                // 无选区，回退到完整替换
-                return { success: true, content: newText };
+                return { success: false, error: '无有效选区，无法执行精确替换' };
             }
 
             const range = selection.getRangeAt(0);
@@ -364,16 +369,17 @@ export class BlockService {
                 }
             }
 
-            if (bestIndex !== -1) {
-                // 找到了匹配，进行精确替换
-                const before = blockInfo.content.substring(0, bestIndex);
-                const after = blockInfo.content.substring(bestIndex + bestMatch.length);
-                const newContent = before + newText + after;
-                return { success: true, content: newContent };
-            }
+if (bestIndex !== -1) {
+      // 找到了匹配，进行精确替换
+      const before = blockInfo.content.substring(0, bestIndex);
+      const after = blockInfo.content.substring(bestIndex + bestMatch.length);
+      const newContent = before + newText + after;
+      // 将多段内容转换为假换行（单换行），避免触发思源重建索引
+      const normalizedContent = newContent.replace(/\n\n+/g, '\n');
+      return { success: true, content: normalizedContent };
+    }
 
-            // 如果还是找不到，使用完整的AI结果替换
-            return { success: true, content: newText };
+            return { success: false, error: '无法在块内容中定位选中文字' };
 
         } catch (error) {
             return { success: false, error: String(error) };

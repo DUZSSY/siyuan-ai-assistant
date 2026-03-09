@@ -39,6 +39,48 @@
     conversations = settingsService.getConversations();
   }
 
+  function isStreamingEnabled(): boolean {
+    return !!settingsService.getSettings().enableStreamingOutput;
+  }
+
+  function getInterfaceLanguageName(): string {
+    const fromI18n = i18n?.meta?.languageName;
+    if (typeof fromI18n === 'string' && fromI18n.trim()) {
+      return fromI18n.trim();
+    }
+
+    try {
+      const lang = (window as any)?.siyuan?.config?.lang;
+      if (lang === 'en_US' || lang === 'en-US') {
+        return 'English';
+      }
+    } catch {
+      // ignore
+    }
+
+    return '简体中文';
+  }
+
+  async function requestWithMode(
+    aiMessages: AIChatMessage[],
+    onProgress?: (accumulated: string) => void
+  ) {
+    if (!isStreamingEnabled()) {
+      return aiService.chatCompletion(aiMessages);
+    }
+
+    try {
+      return await aiService.streamChatCompletion(aiMessages, (_chunk, accumulated) => {
+        if (onProgress) {
+          onProgress(accumulated);
+        }
+      });
+    } catch (streamError) {
+      console.warn('[AI Assistant] Chat streaming failed, fallback to non-streaming:', streamError);
+      return aiService.chatCompletion(aiMessages);
+    }
+  }
+
   async function sendMessage() {
     if (!inputText.trim() || isStreaming) return;
 
@@ -59,7 +101,7 @@
       const aiMessages: AIChatMessage[] = [
         { 
           role: 'system', 
-          content: `你是专业写作助手。请严格遵守：
+          content: `${i18n.chat?.strictSystemPromptUi || i18n.chat?.strictSystemPrompt || `你是专业写作助手。请严格遵守：
 
 【核心规则】
 1. 【绝对禁止】输出"好的"、"以下是"、"修改结果"等任何引导语
@@ -67,6 +109,9 @@
 3. 【绝对禁止】在结果后附加额外说明（如"如果您需要...请告诉我"）
 4. 【必须直接】只给出可替换原文的纯文本结果
 5. 【格式保持】保持原文的段落、换行、标点格式
+6. 【绝对禁止】输出多个候选版本（如版本1/版本2、A/B方案、Option 1/2）
+7. 【必须仅输出】单一最终版本，不能让用户二次选择
+8. 【语言一致】你的思考过程（若模型会返回）与最终正文必须与思源界面语言一致
 
 【禁止示例】
 ❌ "这句话翻译成英文是："
@@ -79,7 +124,7 @@
 原文：你好世界
 输出：Hello World
 
-输出必须是纯文本，用户应可直接复制使用，无需二次处理或删除任何内容。` 
+输出必须是纯文本，用户应可直接复制使用，无需二次处理或删除任何内容。`}\n\n【界面语言强制】思考过程（若模型返回）与最终正文，必须使用 ${getInterfaceLanguageName()}。`
         },
         ...messages.map(m => ({ role: m.role, content: m.content }) as AIChatMessage)
       ];
@@ -94,16 +139,12 @@
 
       messages = [...messages, assistantMessage];
 
-      await aiService.streamChat(aiMessages);
-
-      // Simple non-streaming for now
-      const response = await aiService.processText(
-        userMessage.content,
-        'chat'
-      ).catch(async () => {
-        // Fallback to direct completion
-        const result = await aiService['adapter']?.chatCompletion(aiMessages);
-        return result || { content: 'Sorry, I could not process your request.' };
+      const response = await requestWithMode(aiMessages, (content) => {
+        const index = messages.findIndex(m => m.id === assistantMessage.id);
+        if (index >= 0) {
+          messages[index] = { ...assistantMessage, content };
+          messages = [...messages];
+        }
       });
 
       accumulatedContent = response.content;
@@ -116,7 +157,6 @@
 
       await saveConversation();
     } catch (error) {
-      console.error('[AI Assistant] Chat error:', error);
       messages = [...messages, {
         id: generateId(),
         role: 'assistant',
@@ -148,18 +188,33 @@
     scrollToBottom();
 
     try {
-      const response = await aiService.processText(selectedText, type);
-      
-      messages = [...messages, {
+      const assistantMessage: ConversationMessage = {
         id: generateId(),
         role: 'assistant',
-        content: response.content,
+        content: '',
         timestamp: Date.now()
-      }];
+      };
+
+      messages = [...messages, assistantMessage];
+
+      const operationPrompt = settingsService.getSettings().operationPrompts?.[type] || DEFAULT_PROMPTS[type];
+      const aiMessages = aiService.buildOperationMessages(selectedText, type, operationPrompt);
+      const response = await requestWithMode(aiMessages, (content) => {
+        const index = messages.findIndex(m => m.id === assistantMessage.id);
+        if (index >= 0) {
+          messages[index] = { ...assistantMessage, content };
+          messages = [...messages];
+        }
+      });
+      
+      const index = messages.findIndex(m => m.id === assistantMessage.id);
+      if (index >= 0) {
+        messages[index] = { ...assistantMessage, content: response.content };
+        messages = [...messages];
+      }
 
       await saveConversation();
     } catch (error) {
-      console.error('[AI Assistant] Action error:', error);
       messages = [...messages, {
         id: generateId(),
         role: 'assistant',
@@ -248,8 +303,12 @@
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
+  function getLocale(): string {
+    return i18n.meta?.languageName === 'English' ? 'en-US' : 'zh-CN';
+  }
+
   function formatTime(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString('zh-CN', { 
+    return new Date(timestamp).toLocaleTimeString(getLocale(), {
       hour: '2-digit', 
       minute: '2-digit' 
     });
@@ -270,7 +329,7 @@
       <button class="btn-icon" on:click={startNewChat} title={i18n.chat?.newChat || 'New Chat'}>
         ➕
       </button>
-      <button class="btn-icon" on:click={onOpenSettings} title={i18n.settings || 'Settings'}>
+      <button class="btn-icon" on:click={onOpenSettings} title={i18n.settings?.title || 'Settings'}>
         ⚙️
       </button>
     </div>

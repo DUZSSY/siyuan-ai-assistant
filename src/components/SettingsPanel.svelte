@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import { settingsService } from '../services/settings';
   import { aiService } from '../services/ai';
+  import { showDialog, updateDialogTitle } from '../libs/dialog';
   import type { AIProvider, CustomButton, ToolbarButtonConfig } from '../types';
   import { DEFAULT_PROVIDER_TEMPLATES } from '../types';
   import { Dialog } from 'siyuan';
+import GlobalHistoryViewer from './GlobalHistoryViewer.svelte';
 
   // Props
   export let onClose: () => void = () => {};
@@ -25,8 +27,18 @@
     continue: false,
     custom1: false,
     custom2: false,
-    custom3: false
+    custom3: false,
+    customInput: true
   };
+
+  // History settings
+  let enableOperationHistory: boolean = true;
+  let historyVersionLimit: 'all' | '6versions' = 'all';
+  let enableStreamingOutput: boolean = false;
+  let enableReasoningOutput: boolean = true;
+  let globalHistoryViewer: GlobalHistoryViewer | null = null;
+  let globalHistoryDialog: Dialog | null = null;
+
 
   // Editing states
   let editingProvider: AIProvider | null = null;
@@ -39,24 +51,41 @@
     loadSettings();
   });
 
+  $: if (globalHistoryViewer) {
+    globalHistoryViewer.$set({ i18n });
+  }
+
+  $: if (globalHistoryDialog) {
+    updateDialogTitle(globalHistoryDialog, i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'Operation History');
+  }
+
   function loadSettings() {
     const settings = settingsService.getSettings();
     // 创建新数组引用，强制 Svelte 响应式更新
     providers = [...settings.providers];
     customButtons = [...settings.customButtons];
     toolbarButtons = { ...settings.toolbarButtons };
+    // 加载历史设置
+    enableOperationHistory = settings.enableOperationHistory;
+    historyVersionLimit = settings.historyVersionLimit;
+    enableStreamingOutput = settings.enableStreamingOutput;
+    enableReasoningOutput = settings.enableReasoningOutput ?? true;
   }
 
   // Provider name to i18n key mapping
   const providerNameKeys: Record<string, string> = {
     'Ollama (本地)': 'ollama',
+    'Ollama (Local)': 'ollama',
     'OpenAI': 'openai',
     'DeepSeek': 'deepseek',
     'Moonshot': 'moonshot',
     '智谱AI (Z.ai)': 'zhipu',
+    'Zhipu AI (Z.ai)': 'zhipu',
     'Claude (Anthropic)': 'claude',
     '自定义 OpenAI 格式': 'customOpenAI',
-    'GLM（免费试用-额度有限-仅供测试）': 'testGLM'
+    'Custom OpenAI Format': 'customOpenAI',
+    'GLM（免费试用-额度有限-仅供测试）': 'testGLM',
+    'GLM (Free Trial - Limited - For Testing Only)': 'testGLM'
   };
 
   function getProviderName(name: string): string {
@@ -121,12 +150,16 @@
     loadSettings();
     editingProvider = null;
     isAddingProvider = false;
+    // 通知外部同步配置或刷新状态
+    onProviderChange();
   }
 
   async function deleteProvider(id: string) {
     if (confirm(i18n.settingsPanel?.alerts?.confirmDelete || 'Are you sure you want to delete this provider?')) {
       await settingsService.deleteProvider(id);
       loadSettings();
+      // 提供商被删除后可能导致默认提供商变动，通知同步
+      onProviderChange();
     }
   }
 
@@ -149,7 +182,7 @@
         { role: 'user' as const, content: testPrompt }
       ];
       
-      const response = await aiService['adapter']?.chatCompletion(messages);
+      const response = await aiService.chatCompletion(messages);
       
       if (response && response.content && response.content.length > 0) {
         testStatus = 'success';
@@ -225,6 +258,23 @@ async function saveCustomButtons() {
     showSaveMessage(i18n.settingsPanel?.alerts?.toolbarSaved || 'Toolbar configuration saved');
   }
 
+  // 保存历史设置
+  async function saveHistorySettings() {
+    await settingsService.updateSettings({
+      enableOperationHistory,
+      historyVersionLimit
+    });
+    showSaveMessage(i18n.settingsPanel?.ui?.historySaved || 'History settings saved');
+  }
+
+  async function saveStreamingSettings() {
+    await settingsService.updateSettings({
+      enableStreamingOutput,
+      enableReasoningOutput
+    });
+    showSaveMessage(i18n.settingsPanel?.ui?.streamSaved || 'Streaming setting saved');
+  }
+
   // 同步自定义按钮启用状态到工具栏配置
   async function syncCustomButtonsToToolbar() {
     const buttons = settingsService.getSettings().toolbarButtons;
@@ -270,6 +320,35 @@ async function saveCustomButtons() {
     });
   }
 
+  function escapeHtml(value: unknown): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function normalizeToolbarButtons(
+    importedToolbar: any,
+    currentToolbar: ToolbarButtonConfig
+  ): ToolbarButtonConfig {
+    return {
+      polish: importedToolbar?.polish ?? currentToolbar.polish,
+      translate: importedToolbar?.translate ?? currentToolbar.translate,
+      summarize: importedToolbar?.summarize ?? currentToolbar.summarize,
+      expand: importedToolbar?.expand ?? currentToolbar.expand,
+      condense: importedToolbar?.condense ?? currentToolbar.condense,
+      rewrite: importedToolbar?.rewrite ?? currentToolbar.rewrite,
+      continue: importedToolbar?.continue ?? currentToolbar.continue,
+      custom1: importedToolbar?.custom1 ?? currentToolbar.custom1,
+      custom2: importedToolbar?.custom2 ?? currentToolbar.custom2,
+      custom3: importedToolbar?.custom3 ?? currentToolbar.custom3,
+      // 兼容旧版导出：旧配置可能不存在 customInput 键
+      customInput: importedToolbar?.customInput ?? currentToolbar.customInput
+    };
+  }
+
   // 内置混淆密钥（长期固定）
   const OBFUSCATION_KEY = 'SYAI2026Config';
   
@@ -310,7 +389,11 @@ async function saveCustomButtons() {
       uiMode: settings.uiMode,
       diffHighlightStyle: settings.diffHighlightStyle,
       autoApplyOnAccept: settings.autoApplyOnAccept,
-      requestTimeout: settings.requestTimeout
+      requestTimeout: settings.requestTimeout,
+      enableStreamingOutput: settings.enableStreamingOutput,
+      enableReasoningOutput: settings.enableReasoningOutput,
+      enableOperationHistory: settings.enableOperationHistory,
+      historyVersionLimit: settings.historyVersionLimit
     };
     
     // 混淆加密
@@ -357,8 +440,8 @@ async function saveCustomButtons() {
         }
       }
       
-      // 验证数据结构
-      if (!importData.providers || !importData.toolbarButtons || !importData.customButtons) {
+      // 验证基本数据结构（兼容旧版导出：toolbarButtons/customButtons 允许缺失）
+      if (!importData.providers || !Array.isArray(importData.providers)) {
         alert(i18n.settingsPanel?.configManagement?.importError || '配置文件格式错误');
         return;
       }
@@ -400,8 +483,13 @@ async function saveCustomButtons() {
   
   // 比较工具栏按钮配置是否完全相同
   function isToolbarButtonsEqual(t1: any, t2: any): boolean {
-    const keys = ['polish', 'translate', 'summarize', 'expand', 'condense', 'rewrite', 'continue', 'custom1', 'custom2', 'custom3'];
-    return keys.every(key => t1[key] === t2[key]);
+    const n1 = normalizeToolbarButtons(t1, toolbarButtons);
+    const n2 = normalizeToolbarButtons(t2, toolbarButtons);
+    const keys: (keyof ToolbarButtonConfig)[] = [
+      'polish', 'translate', 'summarize', 'expand', 'condense', 'rewrite', 'continue',
+      'custom1', 'custom2', 'custom3', 'customInput'
+    ];
+    return keys.every(key => n1[key] === n2[key]);
   }
   
   // 合并设置（处理冲突）
@@ -488,7 +576,8 @@ async function saveCustomButtons() {
     // 3. 合并工具栏按钮设置
     let toolbarButtonsChanged = false;
     if (importData.toolbarButtons) {
-      if (!isToolbarButtonsEqual(importData.toolbarButtons, currentSettings.toolbarButtons)) {
+      const normalizedImportToolbar = normalizeToolbarButtons(importData.toolbarButtons, currentSettings.toolbarButtons);
+      if (!isToolbarButtonsEqual(normalizedImportToolbar, currentSettings.toolbarButtons)) {
         // 不一致，提示用户
         userPrompted = true;
         const message = i18n.settingsPanel?.configManagement?.toolbarButtonsConflict ||
@@ -500,7 +589,7 @@ async function saveCustomButtons() {
           i18n.settingsPanel?.configManagement?.keepCurrent || '保留当前设置'
         );
         if (useImport) {
-          newSettings.toolbarButtons = importData.toolbarButtons;
+          newSettings.toolbarButtons = normalizedImportToolbar;
           toolbarButtonsChanged = true;
         } else {
           newSettings.toolbarButtons = currentSettings.toolbarButtons;
@@ -539,6 +628,24 @@ async function saveCustomButtons() {
     }
     if (importData.requestTimeout && importData.requestTimeout !== currentSettings.requestTimeout) {
       newSettings.requestTimeout = importData.requestTimeout;
+      otherSettingsChanged = true;
+    }
+    if (importData.enableStreamingOutput !== undefined && importData.enableStreamingOutput !== currentSettings.enableStreamingOutput) {
+      newSettings.enableStreamingOutput = importData.enableStreamingOutput;
+      otherSettingsChanged = true;
+    }
+    if (importData.enableReasoningOutput !== undefined && importData.enableReasoningOutput !== currentSettings.enableReasoningOutput) {
+      newSettings.enableReasoningOutput = importData.enableReasoningOutput;
+      otherSettingsChanged = true;
+    }
+    // UI Settings (v0.1.18+) - history version limit
+    if (importData.historyVersionLimit && importData.historyVersionLimit !== currentSettings.historyVersionLimit) {
+      newSettings.historyVersionLimit = importData.historyVersionLimit;
+      otherSettingsChanged = true;
+    }
+    // UI Settings (v0.1.18+) - enable operation history
+    if (importData.enableOperationHistory !== undefined && importData.enableOperationHistory !== currentSettings.enableOperationHistory) {
+      newSettings.enableOperationHistory = importData.enableOperationHistory;
       otherSettingsChanged = true;
     }
     
@@ -589,13 +696,16 @@ async function saveCustomButtons() {
     cancelText: string
   ): Promise<boolean> {
     return new Promise((resolve) => {
+      const safeContent = escapeHtml(content);
+      const safeConfirmText = escapeHtml(confirmText);
+      const safeCancelText = escapeHtml(cancelText);
       const dialog = new Dialog({
         title,
         content: `<div style="padding: 20px; max-width: 500px;">
-          <div style="margin-bottom: 20px; white-space: pre-wrap; word-wrap: break-word;">${content}</div>
+          <div style="margin-bottom: 20px; white-space: pre-wrap; word-wrap: break-word;">${safeContent}</div>
           <div class="b3-dialog__action" style="justify-content: flex-end; padding: 0;">
-            <button class="cancel-btn b3-button b3-button--cancel" style="margin-right: 8px;">${cancelText}</button>
-            <button class="confirm-btn b3-button b3-button--text">${confirmText}</button>
+            <button class="cancel-btn b3-button b3-button--cancel" style="margin-right: 8px;">${safeCancelText}</button>
+            <button class="confirm-btn b3-button b3-button--text">${safeConfirmText}</button>
           </div>
         </div>`,
         width: '500px'
@@ -620,53 +730,65 @@ async function saveCustomButtons() {
     importBtn: CustomButton
   ): Promise<boolean> {
     return new Promise((resolve) => {
+      const safeDesc = escapeHtml(i18n.settingsPanel?.configManagement?.customButtonConflictDesc || '检测到配置冲突，请选择要使用的版本：');
+      const safeCurrentVersion = escapeHtml(i18n.settingsPanel?.configManagement?.currentVersion || '当前版本');
+      const safeImportVersion = escapeHtml(i18n.settingsPanel?.configManagement?.importVersion || '导入版本');
+      const safeViewPrompt = escapeHtml(i18n.settingsPanel?.configManagement?.viewFullPrompt || '查看完整提示词');
+      const safeUseCurrent = escapeHtml(i18n.settingsPanel?.configManagement?.useCurrent || '使用当前版本');
+      const safeUseImport = escapeHtml(i18n.settingsPanel?.configManagement?.useImport || '使用导入版本');
+      const safeCurrentName = escapeHtml(currentBtn.name);
+      const safeCurrentIcon = escapeHtml(currentBtn.icon);
+      const safeImportName = escapeHtml(importBtn.name);
+      const safeImportIcon = escapeHtml(importBtn.icon);
+      const safeCurrentPromptPreview = escapeHtml((currentBtn.prompt || '(空)').slice(0, 200));
+      const safeImportPromptPreview = escapeHtml((importBtn.prompt || '(空)').slice(0, 200));
       const dialog = new Dialog({
         title: i18n.settingsPanel?.configManagement?.customButtonConflictTitle || `自定义按钮 ${index + 1} 配置冲突`,
         content: `<div class="custom-button-conflict-dialog" style="padding: 20px; min-width: 500px;">
           <p style="margin-bottom: 16px; color: var(--b3-theme-on-surface);">
-            ${i18n.settingsPanel?.configManagement?.customButtonConflictDesc || '检测到配置冲突，请选择要使用的版本：'}
+            ${safeDesc}
           </p>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
             <!-- 当前版本 -->
             <div style="border: 2px solid var(--b3-border-color); border-radius: 8px; padding: 16px; background: var(--b3-theme-surface);">
               <h4 style="margin: 0 0 12px 0; color: var(--b3-theme-primary); font-size: 14px;">
-                ${i18n.settingsPanel?.configManagement?.currentVersion || '当前版本'}
+                ${safeCurrentVersion}
               </h4>
               <div style="margin-bottom: 8px;">
-                <strong>${currentBtn.name}</strong> ${currentBtn.icon}
+                <strong>${safeCurrentName}</strong> ${safeCurrentIcon}
               </div>
               <div style="font-size: 12px; color: var(--b3-theme-on-surface); margin-bottom: 12px; max-height: 60px; overflow: hidden; text-overflow: ellipsis;">
-                <strong>提示词:</strong> ${currentBtn.prompt || '(空)'}
+                <strong>提示词:</strong> ${safeCurrentPromptPreview}
               </div>
               <button class="view-full-prompt-current b3-button b3-button--outline" style="width: 100%; font-size: 12px;">
-                ${i18n.settingsPanel?.configManagement?.viewFullPrompt || '查看完整提示词'}
+                ${safeViewPrompt}
               </button>
             </div>
             
             <!-- 导入版本 -->
             <div style="border: 2px solid var(--b3-theme-primary); border-radius: 8px; padding: 16px; background: var(--b3-theme-primary-light, rgba(66,133,244,0.05));">
               <h4 style="margin: 0 0 12px 0; color: var(--b3-theme-primary); font-size: 14px;">
-                ${i18n.settingsPanel?.configManagement?.importVersion || '导入版本'}
+                ${safeImportVersion}
               </h4>
               <div style="margin-bottom: 8px;">
-                <strong>${importBtn.name}</strong> ${importBtn.icon}
+                <strong>${safeImportName}</strong> ${safeImportIcon}
               </div>
               <div style="font-size: 12px; color: var(--b3-theme-on-surface); margin-bottom: 12px; max-height: 60px; overflow: hidden; text-overflow: ellipsis;">
-                <strong>提示词:</strong> ${importBtn.prompt || '(空)'}
+                <strong>提示词:</strong> ${safeImportPromptPreview}
               </div>
               <button class="view-full-prompt-import b3-button b3-button--outline" style="width: 100%; font-size: 12px;">
-                ${i18n.settingsPanel?.configManagement?.viewFullPrompt || '查看完整提示词'}
+                ${safeViewPrompt}
               </button>
             </div>
           </div>
           
           <div class="b3-dialog__action" style="justify-content: flex-end; padding: 0;">
             <button class="use-current-btn b3-button b3-button--cancel" style="margin-right: 8px;">
-              ${i18n.settingsPanel?.configManagement?.useCurrent || '使用当前版本'}
+              ${safeUseCurrent}
             </button>
             <button class="use-import-btn b3-button b3-button--text">
-              ${i18n.settingsPanel?.configManagement?.useImport || '使用导入版本'}
+              ${safeUseImport}
             </button>
           </div>
         </div>`,
@@ -696,12 +818,40 @@ async function saveCustomButtons() {
       });
     });
   }
+  function openHistoryDialog() {
+    const container = document.createElement('div');
+    container.style.height = '100%';
+    
+    globalHistoryViewer = new GlobalHistoryViewer({
+      target: container,
+      props: {
+        i18n: i18n
+      }
+    });
+    
+    globalHistoryViewer.$on('close', () => {
+      globalHistoryDialog?.destroy();
+    });
+    
+    globalHistoryDialog = showDialog({
+      title: i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'Operation History',
+      content: container,
+      width: '800px',
+      height: '600px',
+      destroyCallback: () => {
+        globalHistoryViewer?.$destroy();
+        globalHistoryViewer = null;
+        globalHistoryDialog = null;
+      }
+    });
+  }
 </script>
 
 <div class="settings-panel">
   <div class="settings-header">
     <h2>⚙️ {i18n.settingsPanel?.title || 'AI Assistant Settings'}</h2>
     <div class="header-buttons">
+      <button class="btn-history" on:click={openHistoryDialog} title={i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'Operation History'}>📜</button>
       <button class="btn-donate" on:click={() => window.open('https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc', '_blank')} title={i18n.settingsPanel?.donate || 'Support with Donation'}>❤️</button>
       <button class="btn-close" on:click={onClose}>✕</button>
     </div>
@@ -886,7 +1036,7 @@ async function saveCustomButtons() {
                 <div class="provider-card" class:default={provider.isDefault}>
                   <div class="provider-info">
                     <div class="provider-name">
-                      {provider.name}
+                      {getProviderName(provider.name)}
                       {#if provider.isDefault}
                         <span class="badge">{i18n.providers?.default || 'Default'}</span>
                       {/if}
@@ -1012,8 +1162,88 @@ async function saveCustomButtons() {
 
     {:else if activeTab === 'ui'}
       <div class="ui-section">
-        <h3>{i18n.settingsPanel?.ui?.title || 'UI Settings'}</h3>
-        <p class="section-desc">{i18n.settingsPanel?.ui?.notSupported || 'UI customization not supported in MVP version'}</p>
+        <div class="section-card">
+          <div class="section-header">
+            <span class="icon">📜</span>
+            <h3>{i18n.settingsPanel?.ui?.historyTitle || 'Operation History Settings'}</h3>
+          </div>
+          
+          <div class="section-content">
+            <label class="checkbox-item">
+              <input 
+                type="checkbox" 
+                bind:checked={enableOperationHistory} 
+                on:change={saveHistorySettings}
+              />
+              <span class="checkbox-label">{i18n.settingsPanel?.ui?.enableHistory || 'Enable operation history recording'}</span>
+            </label>
+            
+            <div class="settings-group">
+              <label class="group-label">{i18n.settingsPanel?.ui?.versionLimit || 'Version Limit:'}</label>
+              <div class="radio-group-vertical">
+                <label class="radio-item">
+                  <input 
+                    type="radio" 
+                    name="historyVersionLimit" 
+                    value="all" 
+                    bind:group={historyVersionLimit} 
+                    on:change={saveHistorySettings}
+                  />
+                  <span>{i18n.settingsPanel?.ui?.allVersions || 'Save all versions'}</span>
+                </label>
+                <label class="radio-item">
+                  <input 
+                    type="radio" 
+                    name="historyVersionLimit" 
+                    value="6versions" 
+                    bind:group={historyVersionLimit} 
+                    on:change={saveHistorySettings}
+                  />
+                  <span>{i18n.settingsPanel?.ui?.sixVersions || 'Smart sampling (6 versions)'}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="actions-row">
+              <button class="btn-primary" on:click={openHistoryDialog}>
+                <span>📜</span> {i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'View Global History'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card" style="margin-top: 20px;">
+          <div class="section-header">
+            <span class="icon">🌊</span>
+            <h3>{i18n.settingsPanel?.ui?.streamingTitle || 'Streaming Output'}</h3>
+          </div>
+          <div class="section-content">
+            <label class="checkbox-item">
+              <input
+                type="checkbox"
+                bind:checked={enableStreamingOutput}
+                on:change={saveStreamingSettings}
+              />
+              <span class="checkbox-label">{i18n.settingsPanel?.ui?.enableStreaming || 'Enable streaming output (text appears progressively)'}</span>
+            </label>
+
+            <label class="checkbox-item" style="margin-top: 10px;">
+              <input
+                type="checkbox"
+                bind:checked={enableReasoningOutput}
+                on:change={saveStreamingSettings}
+              />
+              <span class="checkbox-label">{i18n.settingsPanel?.ui?.enableReasoning || 'Enable thinking process panel (when model supports it)'}</span>
+            </label>
+
+            <p style="font-size: 13px; color: var(--b3-theme-on-surface); margin: 8px 0 0 0;">
+              {i18n.settingsPanel?.ui?.streamingDesc || 'When enabled, AI-based features render output progressively in current views; when disabled, all features keep non-streaming behavior.'}
+            </p>
+            <p style="font-size: 13px; color: var(--b3-theme-on-surface); margin: 6px 0 0 0;">
+              {i18n.settingsPanel?.ui?.reasoningDesc || 'When disabled, the plugin hides thinking output and will try to request non-thinking mode for providers that support it.'}
+            </p>
+          </div>
+        </div>
       </div>
 
     {:else if activeTab === 'prompts'}
@@ -1103,6 +1333,138 @@ async function saveCustomButtons() {
     gap: 8px;
   }
 
+  // UI Section Styling
+  .ui-section {
+    .section-card {
+      padding: 20px;
+      background: var(--b3-theme-surface, #f5f5f5);
+      border: 1px solid var(--b3-border-color, #e0e0e0);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      transition: box-shadow 0.2s;
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--b3-border-color, #e0e0e0);
+      padding-bottom: 12px;
+
+      .icon {
+        font-size: 20px;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--b3-theme-on-surface);
+      }
+    }
+
+    .section-content {
+      padding: 0 8px;
+    }
+
+    .settings-group {
+      margin-top: 24px;
+      
+      .group-label {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--b3-theme-on-surface-light, #666);
+      }
+    }
+
+    .radio-group-vertical {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      background: var(--b3-theme-background, #fff);
+      border: 1px solid var(--b3-border-color, #e0e0e0);
+      border-radius: 8px;
+
+      .radio-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        padding: 4px 0;
+
+        input[type="radio"] {
+          margin: 0;
+          cursor: pointer;
+        }
+
+        &:hover {
+          color: var(--b3-theme-primary);
+        }
+      }
+    }
+
+    .actions-row {
+      margin-top: 24px;
+      display: flex;
+      justify-content: flex-start;
+      
+      button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        font-size: 13px;
+        border-radius: 6px;
+        background: var(--b3-theme-primary);
+        color: var(--b3-theme-on-primary);
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s;
+
+        &:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+
+        span {
+          font-size: 16px;
+        }
+      }
+    }
+
+    .checkbox-item {
+      .checkbox-label {
+        font-size: 14px;
+        font-weight: 500;
+      }
+    }
+  }
+
+  // Header history btn
+  .btn-history {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.6;
+    padding: 6px;
+    border-radius: 4px;
+    
+    &:hover {
+      opacity: 1;
+      background: var(--b3-theme-hover);
+    }
+  }
+
   .btn-donate {
     background: none;
     border: none;
@@ -1115,6 +1477,23 @@ async function saveCustomButtons() {
     &:hover {
       background: var(--b3-border-color);
     }
+  }
+
+  .btn-history {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--b3-border-color);
+    }
+  }
+
+  .btn-close {
   }
 
   .btn-close {

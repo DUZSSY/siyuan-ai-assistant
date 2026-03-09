@@ -14,34 +14,28 @@ const devDistDir = process.env.VITE_DEV_DIST_DIR || '';
 export default defineConfig({
   plugins: [
     svelte(),
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'public/i18n/*.yaml',
-          dest: 'i18n',
-          transform: {
-            encoding: 'utf8',
-            handler: (content: string) => JSON.stringify(content)
-          }
-        },
-        {
-          src: 'public/icon.png',
-          dest: '.'
-        },
-        {
-          src: 'public/preview.png',
-          dest: '.'
-        },
-        {
-          src: 'README*.md',
-          dest: '.'
-        },
-        {
-          src: 'plugin.json',
-          dest: '.'
-        }
-      ]
-    }),
+    viteStaticCopy({ targets: [
+      {
+        src: 'public/i18n/*.json',
+        dest: 'i18n'
+      },
+      {
+        src: 'public/icon.png',
+        dest: '.'
+      },
+      {
+        src: 'public/preview.png',
+        dest: '.'
+      },
+      {
+        src: 'README*.md',
+        dest: '.'
+      },
+      {
+        src: 'plugin.json',
+        dest: '.'
+      }
+    ] }),
     !isDev && zipPack({
       inDir: './dist',
       outDir: './',
@@ -85,9 +79,9 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: `
-          @use "sass:color";
-          @use "sass:map";
-        `
+@use "sass:color";
+@use "sass:map";
+`
       }
     }
   }

@@ -3,7 +3,7 @@
   "name": "siyuan-ai-assistant",
   "author": "DUZSSY",
   "url": "https://github.com/DUZSSY/siyuan-ai-assistant",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "minAppVersion": "3.5.3",
   "disabledInPublish": false,
 "backends": ["windows", "linux", "darwin", "docker", "android", "ios"],
@@ -28,7 +28,7 @@
       "https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc"
     ]
   },
-  "keywords": [
+"keywords": [
     "ai",
     "assistant",
     "ollama",
@@ -42,5 +42,9 @@
     "block-level",
     "智能助手",
     "文本编辑"
+  ],
+  "i18n": [
+    "en_US",
+    "zh_CN"
   ]
 }

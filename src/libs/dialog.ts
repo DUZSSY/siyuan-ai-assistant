@@ -1,5 +1,26 @@
 import { Dialog } from 'siyuan';
 
+export function updateDialogTitle(dialog: Dialog | null | undefined, title: string): void {
+    if (!dialog) {
+        return;
+    }
+
+    const possibleSelectors = [
+        '.b3-dialog__title',
+        '.b3-dialog__header .fn__ellipsis',
+        '.b3-dialog__header .title',
+        '[data-type="title"]'
+    ];
+
+    for (const selector of possibleSelectors) {
+        const titleElement = dialog.element.querySelector(selector);
+        if (titleElement) {
+            titleElement.textContent = title;
+            return;
+        }
+    }
+}
+
 export function showDialog(options: {
     title: string;
     content: HTMLElement | string;

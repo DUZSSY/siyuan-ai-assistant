@@ -6,8 +6,9 @@ import type { AIOperationType, AIProvider } from '../types';
 export interface FloatingToolbarOptions {
     onOperation: (type: AIOperationType, originalText: string, modifiedText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
     onOperationStart: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
-    onCustomInput?: (selectedText: string, blockId: string | null, selectionStart: number, selectionEnd: number) => void;
+    onCustomInput?: (selectedText: string, originalText: string, blockId: string | null, selectionStart: number, selectionEnd: number) => void;
     onOpenSettings: () => void;
+    onModelChange?: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
     i18n?: Record<string, any>;
 }
 
@@ -44,6 +45,8 @@ export class FloatingToolbar {
     private lastSelectionTime: number = 0;
     private selectionDebounceTimeout: number | null = null;
     private isMouseDown: boolean = false;  // 追踪鼠标是否按下
+    private isSelectingModel: boolean = false;  // 防止选择模型时浮窗关闭
+    private currentOperationType: AIOperationType | null = null;  // 当前操作类型，用于模型切换时重新执行
 
     private i18n: Record<string, any>;
 
@@ -51,6 +54,17 @@ export class FloatingToolbar {
         this.options = options;
         this.i18n = options.i18n || {};
         this.bindEvents();
+    }
+
+    public setI18n(i18n: Record<string, any>): void {
+        this.i18n = i18n || {};
+        this.refreshToolbar();
+        this.refreshToolbarHeader();
+
+        if (this.modelDropdownElement) {
+            this.hideModelDropdown();
+            this.showModelDropdown();
+        }
     }
 
     private bindEvents(): void {
@@ -77,6 +91,10 @@ export class FloatingToolbar {
         };
 
         this.scrollHandler = (e: Event) => {
+            // 如果正在选择模型，不关闭浮窗
+            if (this.isSelectingModel) {
+                return;
+            }
             // 如果滚动事件来自下拉列表内部，则不关闭浮窗
             if (this.modelDropdownElement && this.modelDropdownElement.contains(e.target as Node)) {
                 return;
@@ -468,6 +486,35 @@ export class FloatingToolbar {
      */
     public updateToolbar(): void {
         this.refreshToolbar();
+        this.refreshToolbarHeader();
+    }
+
+    private refreshToolbarHeader(): void {
+        if (!this.toolbarElement) {
+            return;
+        }
+
+        const providerNameEl = this.toolbarElement.querySelector('.provider-name') as HTMLElement | null;
+        if (providerNameEl) {
+            providerNameEl.title = this.i18n.toolbar?.switchModel || '点击切换模型';
+        }
+
+        const pinBtn = this.toolbarElement.querySelector('.btn-pin') as HTMLElement | null;
+        if (pinBtn) {
+            pinBtn.title = this.isPinned
+                ? (this.i18n.toolbar?.pinned || '已固定，点击取消固定')
+                : (this.i18n.toolbar?.pin || '固定位置');
+        }
+
+        const settingsBtn = this.toolbarElement.querySelector('.btn-settings') as HTMLElement | null;
+        if (settingsBtn) {
+            settingsBtn.title = this.i18n.settings?.title || '设置';
+        }
+
+        const closeBtn = this.toolbarElement.querySelector('.btn-close') as HTMLElement | null;
+        if (closeBtn) {
+            closeBtn.title = this.i18n.close || '关闭';
+        }
     }
 
     private createModelDropdown(): void {
@@ -491,7 +538,7 @@ export class FloatingToolbar {
       border: 1px solid var(--b3-border-color, #e0e0e0);
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-      max-height: 200px;
+      max-height: 300px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
@@ -527,11 +574,45 @@ export class FloatingToolbar {
             item.addEventListener('click', async (e) => {
                 e.stopPropagation();
 
+                // 防止选择模型时浮窗关闭
+                this.isSelectingModel = true;
+
+                // 检查是否需要重新执行上一操作
+                const shouldReexecute = this.currentOperationType && this.currentSelection;
+
                 await settingsService.setCurrentProvider(provider.id);
                 aiService.setProvider(provider);
 
                 this.refreshToolbar();
                 this.hideModelDropdown();
+
+                // 操作完成后重置标志
+                this.isSelectingModel = false;
+
+                // 如果有之前的操作，触发重新执行回调
+                if (shouldReexecute && this.options.onModelChange) {
+                    // 获取完整块内容
+                    let blockContent = '';
+                    if (this.currentBlockId) {
+                        const fullBlockContent = await blockService.getBlockContent(this.currentBlockId);
+                        blockContent = fullBlockContent?.markdown || fullBlockContent?.content || '';
+                    }
+                    if (!blockContent) {
+                        blockContent = this.getFullBlockContentFromDOM();
+                    }
+                    if (!blockContent) {
+                        blockContent = this.currentSelection;
+                    }
+
+                    this.options.onModelChange(
+                        this.currentOperationType!,
+                        blockContent,
+                        this.currentBlockId || undefined,
+                        this.currentSelection,
+                        this.currentSelectionStart,
+                        this.currentSelectionEnd
+                    );
+                }
             });
             
             item.addEventListener('mouseenter', () => {
@@ -571,8 +652,24 @@ export class FloatingToolbar {
         if (!providerBtn) return;
 
         const rect = providerBtn.getBoundingClientRect();
-        this.modelDropdownElement.style.top = `${rect.bottom + 5}px`;
-        this.modelDropdownElement.style.left = `${rect.left}px`;
+        const viewportHeight = window.innerHeight;
+        const dropdownHeight = Math.min(this.modelDropdownElement.scrollHeight, 300); // 增加 max-height 到 300
+        
+        // 检查下方空间是否足够 (rect.bottom + dropdownHeight + margin)
+        if (rect.bottom + dropdownHeight + 10 > viewportHeight) {
+            // 空间不足，向上弹出
+            this.modelDropdownElement.style.top = 'auto';
+            this.modelDropdownElement.style.bottom = `${viewportHeight - rect.top + 5}px`;
+        } else {
+            // 空间足够，向下弹出
+            this.modelDropdownElement.style.top = `${rect.bottom + 5}px`;
+            this.modelDropdownElement.style.bottom = 'auto';
+        }
+        
+        // 增加左右边界检测
+        const finalLeft = Math.max(10, Math.min(rect.left, window.innerWidth - 210));
+        this.modelDropdownElement.style.left = `${finalLeft}px`;
+        this.modelDropdownElement.style.maxHeight = `${Math.min(300, viewportHeight - 100)}px`;
     }
 
     private hideModelDropdown(): void {
@@ -610,7 +707,7 @@ export class FloatingToolbar {
             <span class="drag-handle" style="cursor: move; padding: 2px 4px; margin-right: 4px; color: var(--b3-theme-on-surface, #999);">⋮⋮</span>
             <span class="provider-name" style="cursor: pointer; font-weight: 500; font-size: 12px; color: var(--b3-theme-on-surface, #666); flex: 1;" title="${this.i18n.toolbar?.switchModel || '点击切换模型'}">${providerInfo}</span>
             <button class="btn-pin" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-right: 4px; opacity: 0.6;" title="${this.i18n.toolbar?.pin || '固定位置'}">📌</button>
-            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 6px;" title="${this.i18n.settings || '设置'}">⚙️</button>
+            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 6px;" title="${this.i18n.settings?.title || '设置'}">⚙️</button>
             <button class="btn-close" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-left: 4px; color: var(--b3-theme-on-surface, #999);" title="${this.i18n.close || '关闭'}">✕</button>
         `;
         
@@ -751,18 +848,8 @@ export class FloatingToolbar {
     private async handleOperation(type: AIOperationType): Promise<void> {
         if (!this.currentSelection) return;
 
-        // 处理自定义输入类型的特殊逻辑
-        if (type === 'customInput') {
-            if (this.options.onCustomInput) {
-                this.options.onCustomInput(
-                    this.currentSelection,
-                    this.currentBlockId,
-                    this.currentSelectionStart,
-                    this.currentSelectionEnd
-                );
-            }
-            return;
-        }
+        // 记录当前操作类型，用于模型切换时重新执行
+        this.currentOperationType = type;
 
         // 确保 AI 提供商已配置
         if (!aiService.isConfigured()) {
@@ -776,11 +863,7 @@ export class FloatingToolbar {
             }
         }
 
-        const settings = settingsService.getSettings();
-        const customBtn = settings.customButtons.find((b: any) => b.id === type);
-        const prompt = customBtn?.prompt;
-
-        // 获取完整块内容用于差异显示
+        // 获取完整块内容用于差异显示和精确替换
         let blockContent = '';
         if (this.currentBlockId) {
             const fullBlockContent = await blockService.getBlockContent(this.currentBlockId);
@@ -798,112 +881,30 @@ export class FloatingToolbar {
             blockContent = this.currentSelection;
         }
 
-        // 构建提示词：告诉AI只处理选中部分
-        let finalPrompt = '';
-        const isPartialSelection = blockContent !== this.currentSelection;
-
-        if (isPartialSelection) {
-            // 只选中部分内容
-            const operationPrompts: Record<string, string> = {
-                polish: `请润色以下文本的选中部分，只返回润色后的选中部分文本，不要解释：\n\n选中部分：${this.currentSelection}`,
-                translate: `请翻译以下文本的选中部分，只返回翻译后的选中部分文本，不要解释：\n\n选中部分：${this.currentSelection}`,
-                summarize: `请总结以下文本，只返回总结内容：\n\n${blockContent}`,
-                expand: `请扩写以下文本：\n\n${blockContent}`,
-                condense: `请精简以下文本：\n\n${blockContent}`,
-                rewrite: `请改写以下文本：\n\n${blockContent}`,
-                continue: `请续写以下文本：\n\n${blockContent}`,
-            };
-            // 修复：自定义按钮确保包含选中文字
-            const isCustomButton = type.startsWith('custom');
-            if (isCustomButton && prompt) {
-                finalPrompt = `${prompt}\n\n${this.currentSelection}`;
-            } else {
-                finalPrompt = operationPrompts[type] || prompt || `${type}: ${this.currentSelection}`;
+        // 处理自定义输入类型的特殊逻辑
+        if (type === 'customInput') {
+            if (this.options.onCustomInput) {
+                this.options.onCustomInput(
+                    this.currentSelection,
+                    blockContent,
+                    this.currentBlockId,
+                    this.currentSelectionStart,
+                    this.currentSelectionEnd
+                );
             }
-        } else {
-            // 选中整个块或无法获取完整内容
-            // 修复：自定义按钮确保包含选中文字
-            const isCustomButton = type.startsWith('custom');
-            if (isCustomButton && prompt) {
-                finalPrompt = `${prompt}\n\n${this.currentSelection}`;
-            } else {
-                finalPrompt = prompt || '';
-            }
+            this.hide();
+            return;
         }
 
-        this.options.onOperationStart(
+        await Promise.resolve(this.options.onOperationStart(
             type, 
             blockContent, 
             this.currentBlockId || undefined,
             this.currentSelection,
             this.currentSelectionStart,
             this.currentSelectionEnd
-        );
-
-        try {
-            this.setLoading(true);
-
-            // 只传给AI选中的文字
-            const messages = aiService.buildOperationMessages(
-                this.currentSelection,
-                type,
-                finalPrompt
-            );
-            const response = await aiService['adapter']?.chatCompletion(messages);
-
-            if (response) {
-                // 传递完整块内容用于差异显示，传递选中文字和索引用于精确替换
-                this.options.onOperation(
-                    type,
-                    blockContent,  // 完整内容 - 显示差异用
-                    response.content,  // AI结果
-                    this.currentBlockId || undefined,
-                    this.currentSelection,  // 选中文字
-                    this.currentSelectionStart,  // 选中起始索引
-                    this.currentSelectionEnd  // 选中结束索引
-                );
-            }
-        } catch (error) {
-            let errorMsg = this.i18n.messages?.error || '处理失败';
-            
-            if (error instanceof Error) {
-                const errorText = error.message.toLowerCase();
-                
-                // 超时错误
-                if (errorText.includes('timeout') || errorText.includes('aborted') || errorText.includes('etimedout')) {
-                    errorMsg = this.i18n.messages?.timeoutError || '请求超时（180秒），请检查网络连接或稍后重试';
-                }
-                // 网络错误
-                else if (errorText.includes('network') || errorText.includes('fetch') || errorText.includes('enetunreach') || errorText.includes('econnrefused')) {
-                    errorMsg = this.i18n.messages?.networkError || '网络错误，请检查网络连接';
-                }
-                // 认证错误
-                else if (errorText.includes('auth') || errorText.includes('api key') || errorText.includes('unauthorized') || errorText.includes('401')) {
-                    errorMsg = this.i18n.messages?.authError || 'API密钥无效或已过期，请检查配置';
-                }
-                // 频率限制
-                else if (errorText.includes('rate limit') || errorText.includes('too many') || errorText.includes('429')) {
-                    errorMsg = this.i18n.messages?.rateLimitError || '请求过于频繁，请稍后再试';
-                }
-                // AI提供商错误（500系列或明确的provider错误）
-                else if (errorText.includes('500') || errorText.includes('502') || errorText.includes('503') || errorText.includes('bad gateway') || errorText.includes('service unavailable')) {
-                    errorMsg = this.i18n.messages?.providerError || 'AI提供商服务异常，请稍后重试';
-                }
-                // 模型错误
-                else if (errorText.includes('model') || errorText.includes('invalid model') || errorText.includes('model not found')) {
-                    errorMsg = this.i18n.messages?.modelError || '模型处理失败，请重试或更换模型';
-                }
-                // 其他错误，显示简要信息
-                else {
-                    errorMsg = `${this.i18n.messages?.error || '处理失败'}：${error.message}`;
-                }
-            }
-            
-            alert(errorMsg);
-        } finally {
-            this.setLoading(false);
-            this.hide();
-        }
+        ));
+        this.hide();
     }
 
     /**

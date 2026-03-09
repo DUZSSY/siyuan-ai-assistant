@@ -230,12 +230,16 @@ export class SettingsService {
             showContextMenu: true,
             autoApplyOnAccept: false,
             maxConcurrentRequests: 3,
-            requestTimeout: 60000,
+            requestTimeout: 600000,
+            enableStreamingOutput: false,
+            enableReasoningOutput: true,
             customButtons: DEFAULT_CUSTOM_BUTTONS,
             toolbarButtons: DEFAULT_TOOLBAR_BUTTONS,
             enableLocalMode: true,
             redactSensitiveInfo: false,
-            customInputHistory: []
+            customInputHistory: [],
+            enableOperationHistory: true,
+            historyVersionLimit: 'all'
         };
     }
 

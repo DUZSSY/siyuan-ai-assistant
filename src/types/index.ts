@@ -18,6 +18,7 @@ export interface AIChatMessage {
 
 export interface AIStreamEvent {
     content?: string;
+    reasoning?: string;
     error?: Error;
     done?: boolean;
 }
@@ -61,7 +62,11 @@ export type AIOperationType =
     | 'custom1'
     | 'custom2'
     | 'custom3'
-    | 'customInput';
+    | 'customInput'
+    | 'regenerate'
+    | 'switchModel'
+    | 'directEdit'
+    | 'rollback';
 
 export interface OperationPrompt {
     type: AIOperationType;
@@ -171,6 +176,8 @@ export interface PluginSettings {
     autoApplyOnAccept: boolean;
     maxConcurrentRequests: number;
     requestTimeout: number;
+    enableStreamingOutput: boolean;
+    enableReasoningOutput: boolean;
     
     // Custom buttons
     customButtons: CustomButton[];
@@ -187,6 +194,10 @@ export interface PluginSettings {
     
     // Custom input prompt history
     customInputHistory: string[];
+    
+    // History settings
+    enableOperationHistory: boolean;
+    historyVersionLimit: 'all' | '6versions';
 }
 
 // ==================== Block Types ====================
@@ -272,7 +283,7 @@ export const DEFAULT_PROVIDER_TEMPLATES: Omit<AIProvider, 'id' | 'isDefault'>[] 
 export const DEFAULT_PROMPTS: Record<AIOperationType, string> = {
     chat: '',
     polish: '请润色以下文本，优化表达使其更流畅、专业。严格要求：1.保持原意不变；2.仅输出润色后的文本，不要有任何解释或前言；3.不要添加任何额外内容：',
-    translate: '请将以下文本翻译成目标语言。严格规则：1.如果文本是中文，翻译成英文；2.如果文本是英文或其他语言，翻译成中文；3.必须只输出翻译结果，禁止输出原文；4.保持原意和专业术语准确；5.不要添加任何解释、前言或额外内容：',
+    translate: '请将以下文本翻译成目标语言。严格规则：1.根据整体语义与行文结构判断主要语言（而非符号、变量名或专业术语）：中文语义为主则翻译成英文，否则翻译成中文；2.严禁将文本翻译成与源语言相同的语言；3.必须只输出翻译结果，禁止输出原文；4.保持原意和专业术语准确；5.不要添加任何解释、前言或额外内容：',
     summarize: '请提炼以下文本的核心要点。严格要求：1.用3-5句话概括关键信息；2.只输出总结内容；3.不要添加任何解释或额外内容：',
     expand: '请基于以下内容进行扩展。严格规则：1.增加相关细节和解释；2.使内容更丰富完整；3.保持主题一致；4.只输出扩展后的内容；5.不要添加任何解释或额外内容：',
     condense: '请精简以下文本。严格规则：1.去除冗余描述和重复信息；2.保留核心观点和关键数据；3.只输出精简后的内容；4.不要添加任何解释或额外内容：',

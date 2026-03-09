@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { BaseProviderAdapter } from './base';
 import type { AIChatMessage, AIStreamEvent, AIResponse } from '../types';
+import { settingsService } from '../services/settings';
 
 export class OpenAIAdapter extends BaseProviderAdapter {
     private client: OpenAI;
@@ -12,8 +13,26 @@ export class OpenAIAdapter extends BaseProviderAdapter {
             baseURL: provider.baseURL,
             dangerouslyAllowBrowser: true,
             maxRetries: 2,
-            timeout: 180000
+            timeout: 600000
         });
+    }
+
+    private buildThinkingControlPayload(model?: string): Record<string, unknown> {
+        const settings = settingsService.getSettings();
+        if (settings.enableReasoningOutput !== false) {
+            return {};
+        }
+
+        // 统一策略：对所有提供商都采用 Ollama 方案（think=false）
+        // 某些模型对特殊参数敏感可能会导致报错（如 gpt-oss）
+        const requestModel = this.getRequestModel(model);
+        if (requestModel?.startsWith('gpt-oss')) {
+            return {};
+        }
+
+        return {
+            think: false
+        };
     }
 
     /**
@@ -48,12 +67,15 @@ export class OpenAIAdapter extends BaseProviderAdapter {
     }
 
     async chatCompletion(messages: AIChatMessage[], model?: string): Promise<AIResponse> {
-        const response = await this.client.chat.completions.create({
+        const requestPayload: any = {
             model: this.getRequestModel(model),
             messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
             temperature: this.provider.temperature ?? 0.7,
             max_tokens: this.provider.maxTokens ?? 4096
-        });
+        };
+        Object.assign(requestPayload, this.buildThinkingControlPayload(model));
+
+        const response = await this.client.chat.completions.create(requestPayload);
 
         const rawContent = response.choices[0]?.message?.content || '';
         const content = this.filterReasoningContent(rawContent);
@@ -75,74 +97,32 @@ export class OpenAIAdapter extends BaseProviderAdapter {
         model?: string
     ): Promise<void> {
         try {
-            const stream = await this.client.chat.completions.create({
+            const requestPayload: any = {
                 model: this.getRequestModel(model),
                 messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
                 temperature: this.provider.temperature ?? 0.7,
                 max_tokens: this.provider.maxTokens ?? 4096,
                 stream: true
-            });
+            };
+            Object.assign(requestPayload, this.buildThinkingControlPayload(model));
 
-            // 用于累积流式内容以检测推理标签
-            let buffer = '';
-            let isInReasoningBlock = false;
-
+            const stream = await this.client.chat.completions.create(requestPayload);
             for await (const chunk of stream) {
-                const content = chunk.choices[0]?.delta?.content || '';
-                if (!content) continue;
+                const delta = (chunk.choices[0]?.delta || {}) as Record<string, any>;
+                const content = typeof delta.content === 'string' ? delta.content : '';
+                
+                // 增加更多推理字段支持，适配不同版本的 Ollama 和推理模型
+                const reasoning =
+                    (typeof delta.reasoning_content === 'string' ? delta.reasoning_content : '') ||
+                    (typeof delta.reasoning === 'string' ? delta.reasoning : '') ||
+                    (typeof delta.thought === 'string' ? delta.thought : '');
 
-                buffer += content;
-
-                // 检测推理块开始
-                if (!isInReasoningBlock) {
-                    if (buffer.includes('<think>') || buffer.includes('<thinking>') || buffer.includes('<reasoning>')) {
-                        isInReasoningBlock = true;
-                        // 只发送推理块之前的内容
-                        const thinkIndex = Math.min(
-                            buffer.indexOf('<think>') !== -1 ? buffer.indexOf('<think>') : Infinity,
-                            buffer.indexOf('<thinking>') !== -1 ? buffer.indexOf('<thinking>') : Infinity,
-                            buffer.indexOf('<reasoning>') !== -1 ? buffer.indexOf('<reasoning>') : Infinity
-                        );
-                        if (thinkIndex > 0) {
-                            onEvent({ content: buffer.substring(0, thinkIndex) });
-                        }
-                        continue;
-                    }
+                if (reasoning) {
+                    onEvent({ reasoning });
                 }
 
-                // 检测推理块结束
-                if (isInReasoningBlock) {
-                    if (buffer.includes('</think>') || buffer.includes('</thinking>') || buffer.includes('</reasoning>')) {
-                        isInReasoningBlock = false;
-                        // 提取结束标签后的内容
-                        const endMatch = buffer.match(/<\/(think|thinking|reasoning)>([\s\S]*)/i);
-                        if (endMatch && endMatch[2]) {
-                            buffer = endMatch[2];
-                        } else {
-                            buffer = '';
-                        }
-                        continue;
-                    }
-                    // 仍在推理块中，跳过
-                    continue;
-                }
-
-                // 正常内容，直接发送
-                if (!isInReasoningBlock) {
+                if (content) {
                     onEvent({ content });
-                    // 保持缓冲区不会无限增长
-                    if (buffer.length > 1000) {
-                        buffer = buffer.slice(-500);
-                    }
-                }
-            }
-
-            // 流结束时，对累积的内容进行最终过滤（处理可能的残留）
-            if (buffer && !isInReasoningBlock) {
-                const filtered = this.filterReasoningContent(buffer);
-                if (filtered && filtered !== buffer) {
-                    // 如果有过滤，发送差异部分
-                    onEvent({ content: filtered.replace(buffer, '') });
                 }
             }
 

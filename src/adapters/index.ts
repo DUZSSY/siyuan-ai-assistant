@@ -7,16 +7,20 @@ export class AdapterFactory {
     private static useProxy: boolean | null = null;
 
     static createAdapter(provider: AIProvider): IAIProviderAdapter {
-        // 检测是否需要使用代理（只在第一次运行时检测）
+        // 环境检测：浏览器或移动端必须使用 ProxyAdapter
+        const isRestricted = isRestrictedEnvironment();
+        
+        // 逻辑调整：
+        // 1. 如果是浏览器环境，由于 CORS 限制，强制使用 ProxyAdapter（不含 Electron）
+        // 2. 如果是桌面原生端 (Electron)，使用 OpenAI 直接请求 (稳定性更好且无跨域限制)
         if (this.useProxy === null) {
-            this.useProxy = isRestrictedEnvironment();
+            this.useProxy = isRestricted;
         }
 
-        // 受限环境（浏览器/移动端）使用代理适配器
+        // 使用代理适配器
         if (this.useProxy) {
             return new ProxyAdapter(provider);
         }
-        
         // 桌面客户端使用直接请求
         return new OpenAIAdapter(provider);
     }
