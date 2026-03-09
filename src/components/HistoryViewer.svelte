@@ -41,10 +41,6 @@
     }
   }
 
-  function getLocale(): string {
-    return i18n.meta?.languageName === 'English' ? 'en-US' : 'zh-CN';
-  }
-
   // 获取操作名称
   function getOperationName(op: AIOperationType | 'original'): string {
     if (op === 'original') return i18n.history?.original || '原文';
@@ -73,7 +69,7 @@
   // 格式化时间
   function formatTime(timestamp: number): string {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString(getLocale(), { 
+    return date.toLocaleTimeString('zh-CN', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: false
@@ -161,7 +157,7 @@
   {:else if !history}
     <div class="empty-state">
       <p>{i18n.history?.noHistory || '未发现历史记录'}</p>
-      <button class="btn-close-simple" on:click={() => dispatch('close')}>{i18n.history?.close || i18n.close || '关闭'}</button>
+      <button class="btn-close-simple" on:click={() => dispatch('close')}>关闭</button>
     </div>
   {:else}
     <!-- Header -->

@@ -278,7 +278,7 @@
   },
   "defaultPrompts": {
     "polish": "Please polish the following text to make it more fluent and professional. Strict requirements: 1. Keep the original meaning unchanged; 2. Only output the polished text, do not include any explanations or introductions; 3. Do not add any extra content:",
-    "translate": "Please translate the following text into the target language. Strict rules: 1.If the text is primarily Chinese (contains Chinese characters/punctuation), translate to English; otherwise translate to Chinese; 2.ALWAYS translate the text regardless of length (even single words), NEVER return the original text unchanged; 3.Output only the translation, never include the original text; 4.Maintain accuracy of meaning and professional terms; 5.Do not add any explanations, introductions, or extra content. ",
+    "translate": "Please translate the following text into the target language. Strict rules: 1.Determine the primary language based on overall semantics and writing structure (not symbols, variable names, or technical terms): if the semantic content is primarily Chinese, translate to English, otherwise translate to Chinese; 2.You MUST NOT translate text into the same language as the source; 3.You must only output the translation, prohibit outputting the original text; 4.Keep the original meaning and professional terms accurate; 5.Do not add any explanations, introductions, or extra content:",
     "summarize": "Please extract the core points of the following text. Strict requirements: 1. Summarize key information in 3-5 sentences; 2. Only output the summary; 3. Do not add any explanations or extra content:",
     "expand": "Please expand on the following content. Strict rules: 1. Add relevant details and explanations; 2. Make the content richer and more complete; 3. Keep the same topic; 4. Only output the expanded content; 5. Do not add any explanations or extra content:",
     "condense": "Please condense the following text. Strict rules: 1. Remove redundant descriptions and repetitive information; 2. Keep core viewpoints and key data; 3. Only output the condensed content; 4. Do not add any explanations or extra content:",
@@ -292,11 +292,9 @@
     "regenerateSystemPrompt": "You are a professional writing assistant. Follow these rules strictly:\n1. [Never] Output lead-in/trailing phrases like \"Okay\", \"Here is\", or \"Modified result\"\n2. [Never] Explain modification reasons, mention \"improvement request\", or add summaries\n3. [Must] Combine original instruction, source text, current draft, and new improvement request into one final result\n4. [Format] Preserve paragraphing, line breaks, and punctuation style\n5. [Language Consistency] Your reasoning (if returned by model) and final output must use the same language as the user's input\n\nOutput must be plain revised text only."
   },
   "history": {
-    "globalTitle": "Global Operation History",
     "globalHistoryTitle": "AI History",
     "refresh": "Refresh",
     "clearAll": "Clear All",
-    "clearAllConfirm": "Are you sure you want to clear all history records? This action cannot be undone.",
     "noHistory": "No History Available",
     "noHistoryHint": "After processing text with AI, the history will be shown here",
     "applied": "Applied",
@@ -320,8 +318,6 @@
     "appliedSuccess": "Applied to document successfully",
     "restoreSuccess": "Restored version successfully",
     "viewHistory": "History",
-    "regenerate": "Regenerate",
-    "switchModel": "Switch Model",
     "directEdit": "Direct Edit",
     "rollback": "Rollback",
     "rollbackToThis": "Rollback to selected version",
@@ -333,9 +329,6 @@
     "loading": "Loading...",
     "processTimeline": "Process Timeline",
     "backToFinal": "Back to Final View",
-    "readonly": "Read-only",
-    "skipped": "Skipped",
-    "someVersionsSkipped": "Some versions are skipped",
-    "close": "Close"
+    "readonly": "Read-only"
   }
 }
