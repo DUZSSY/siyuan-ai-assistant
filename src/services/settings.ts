@@ -22,28 +22,28 @@ export class SettingsService {
         this.plugin = plugin;
     }
 
-    async loadSettings(): Promise<void> {
-        if (!this.plugin) return;
+async loadSettings(): Promise<void> {
+    if (!this.plugin) return;
 
-        try {
-            const data = await this.plugin.loadData(STORAGE_KEY);
-            if (data) {
-                this.settings = { ...this.getDefaultSettings(), ...data };
-            }
-        } catch (error) {
-            // 加载设置失败，使用默认设置
-        }
+    try {
+      const data = await this.plugin.loadData(STORAGE_KEY);
+      if (data) {
+        this.settings = { ...this.getDefaultSettings(), ...data };
+      }
+    } catch (error) {
+      console.error('[AI Assistant] Failed to load settings:', error);
     }
+  }
 
-    async saveSettings(): Promise<void> {
-        if (!this.plugin) return;
+  async saveSettings(): Promise<void> {
+    if (!this.plugin) return;
 
-        try {
-            await this.plugin.saveData(STORAGE_KEY, this.settings);
-        } catch (error) {
-            // 保存设置失败
-        }
+    try {
+      await this.plugin.saveData(STORAGE_KEY, this.settings);
+    } catch (error) {
+      console.error('[AI Assistant] Failed to save settings:', error);
     }
+  }
 
     getSettings(): PluginSettings {
         return { ...this.settings };

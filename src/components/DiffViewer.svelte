@@ -67,24 +67,26 @@
   let customButtonNames: Record<string, string> = {};
 
   // 获取操作名称：自定义按钮从设置中读取实际名称
-  function getOperationName(op: AIOperationType): string {
+  $: operationName = getOperationName(operationType, customButtonNames, i18n);
+
+  function getOperationName(op: AIOperationType, customBtns: Record<string, string>, currentI18n: Record<string, any>): string {
     const staticNames: Record<AIOperationType, string> = {
-      chat: i18n.operations?.chat || '对话',
-      polish: i18n.operations?.polish || '润色',
-      translate: i18n.operations?.translate || '翻译',
-      summarize: i18n.operations?.summarize || '总结',
-      expand: i18n.operations?.expand || '扩写',
-      condense: i18n.operations?.condense || '精简',
-      rewrite: i18n.operations?.rewrite || '改写',
-      continue: i18n.operations?.continue || '续写',
-      customInput: i18n.operations?.customInput || '对话',
-      custom1: '自定义 1',
-      custom2: '自定义 2',
-      custom3: '自定义 3'
+      chat: currentI18n.operations?.chat || '对话',
+      polish: currentI18n.operations?.polish || '润色',
+      translate: currentI18n.operations?.translate || '翻译',
+      summarize: currentI18n.operations?.summarize || '总结',
+      expand: currentI18n.operations?.expand || '扩写',
+      condense: currentI18n.operations?.condense || '精简',
+      rewrite: currentI18n.operations?.rewrite || '改写',
+      continue: currentI18n.operations?.continue || '续写',
+      customInput: currentI18n.operations?.customInput || '对话',
+      custom1: currentI18n.customButtons?.custom1 || '自定义 1',
+      custom2: currentI18n.customButtons?.custom2 || '自定义 2',
+      custom3: currentI18n.customButtons?.custom3 || '自定义 3'
     };
     
-    if (op.startsWith('custom') && customButtonNames[op]) {
-      return customButtonNames[op];
+    if (op.startsWith('custom') && customBtns[op]) {
+      return customBtns[op];
     }
     
     return staticNames[op];
@@ -141,7 +143,7 @@
 
   function handleRegenerate() {
     if (!regenerateInstruction.trim()) {
-      alert(i18n.diff?.regeneratePlaceholder || 'Please enter your modification requirements');
+      alert(i18n.diff?.regeneratePlaceholder || '请输入您的修改要求');
       return;
     }
     dispatch('regenerate', {
@@ -190,12 +192,12 @@
   <!-- Header -->
   <div class="diff-header">
     <div class="diff-title">
-      <span>📊 {getOperationName(operationType)}</span>
+      <span>📊 {operationName}</span>
       
       <!-- 模型选择器 -->
       <div class="model-selector">
         <button class="model-btn" on:click={toggleModelDropdown}>
-          {currentProvider ? currentProvider.name + ' : ' + currentProvider.model : (i18n.diff?.notConfigured || 'Not Configured')}
+          {currentProvider ? currentProvider.name + ' : ' + currentProvider.model : (i18n.diff?.notConfigured || '未配置')}
         </button>
         {#if showModelDropdown}
           <div class="model-dropdown">
@@ -223,21 +225,21 @@
       {#if showActions && !isLoading}
       <div class="diff-actions">
         {#if historyId}
-          <button class="btn-history" on:click={() => dispatch('viewHistory')} title={i18n.history?.viewHistory || 'View History'}>
-            <span class="icon">📜</span> {i18n.history?.viewHistory || 'History'}
+<button class="btn-history" on:click={() => dispatch('viewHistory')} title={i18n.history?.viewHistory || '历史版本'}>
+        <span class="icon">📜</span> {i18n.history?.viewHistory || '历史'}
           </button>
         {/if}
         <button class="btn-edit" on:click={isEditing ? cancelEdit : startEdit}>
-          {isEditing ? '✕ ' + (i18n.diff?.cancelEdit || 'Cancel Edit') : '✏️ ' + (i18n.diff?.directEdit || 'Direct Edit')}
+          {isEditing ? '✕ ' + (i18n.diff?.cancelEdit || '取消编辑') : '✏️ ' + (i18n.diff?.directEdit || '直接编辑')}
         </button>
         <button class="btn-regenerate" on:click={() => showRegeneratePanel = !showRegeneratePanel}>
-          🔄 {i18n.diff?.regenerate || 'Regenerate'}
+          🔄 {i18n.diff?.regenerate || '重新生成'}
         </button>
         <button class="btn-apply" on:click={applyChanges}>
-          ✓ {i18n.diff?.applyChanges || 'Apply Changes'}
+          ✓ {i18n.diff?.applyChanges || '应用修改'}
         </button>
         <button class="btn-cancel" on:click={cancel}>
-          {i18n.diff?.cancel || 'Cancel'}
+          {i18n.diff?.cancel || '取消'}
         </button>
       </div>
     {/if}
@@ -247,27 +249,27 @@
   {#if showRegeneratePanel && !isLoading && !isEditing}
     <div class="regenerate-panel">
       <div class="regenerate-header">
-        <span>💬 {i18n.diff?.regenerateTitle || 'Regenerate - Adjust results based on your requirements'}</span>
+        <span>💬 {i18n.diff?.regenerateTitle || '重新生成 - 根据您的要求调整结果'}</span>
         <button class="btn-close" on:click={() => showRegeneratePanel = false}>✕</button>
       </div>
       <div class="regenerate-content">
         <p class="regenerate-hint">
-          {i18n.diff?.regenerateHint || '💡 Enter your requirements, AI will adjust based on the original and current results. For example: "Make it more concise", "Add more technical details", "More formal tone", etc.'}
+          {i18n.diff?.regenerateHint || '💡 输入您的要求，AI将根据原文和当前结果进行调整。例如："精简一些"、"增加技术细节"、"更正式的语气"等。'}
         </p>
         <textarea
           bind:value={regenerateInstruction}
-          placeholder={i18n.diff?.regeneratePlaceholder || 'Enter your modification requirements...'}
+          placeholder={i18n.diff?.regeneratePlaceholder || '请输入您的修改要求...'}
           rows="3"
           class="regenerate-input"
         ></textarea>
         <div class="regenerate-actions">
-          <button class="btn-secondary" on:click={() => showRegeneratePanel = false}>{i18n.diff?.cancel || 'Cancel'}</button>
+          <button class="btn-secondary" on:click={() => showRegeneratePanel = false}>{i18n.diff?.cancel || '取消'}</button>
           <button 
             class="btn-primary" 
             on:click={handleRegenerate}
             disabled={!regenerateInstruction.trim()}
           >
-            {i18n.diff?.sendRequest || 'Send Request'}
+            {i18n.diff?.sendRequest || '发送请求'}
           </button>
         </div>
       </div>
@@ -277,15 +279,15 @@
   {#if hasReasoning && reasoning && reasoning.trim().length > 0}
     <div class="reasoning-panel" aria-live="polite">
       <div class="reasoning-header">
-        <span>🧠 {i18n.diff?.reasoningTitle || 'Thinking Process (streaming)'}</span>
+        <span>🧠 {i18n.diff?.reasoningTitle || '思考过程（流式）'}</span>
         <button
           class="reasoning-toggle"
           type="button"
           on:click={() => reasoningCollapsed = !reasoningCollapsed}
         >
           {reasoningCollapsed
-            ? (i18n.diff?.expandReasoning || 'Expand')
-            : (i18n.diff?.collapseReasoning || 'Collapse')}
+? (i18n.diff?.expandReasoning || '展开')
+      : (i18n.diff?.collapseReasoning || '折叠')}
         </button>
       </div>
       {#if !reasoningCollapsed}
@@ -299,7 +301,7 @@
     <!-- 原文栏 -->
     <div class="diff-panel original">
       <div class="panel-header">
-        <span>📝 {i18n.diff?.original || 'Original'}</span>
+        <span>📝 {i18n.diff?.original || '原文'}</span>
       </div>
       <div class="panel-content">
         <div class="text-content">
@@ -313,7 +315,7 @@
     <!-- 修改后栏 -->
     <div class="diff-panel modified" class:editing={isEditing}>
       <div class="panel-header">
-        <span>✨ {i18n.diff?.modified || 'Modified'}{isEditing ? ' (' + (i18n.diff?.cancelEdit?.replace('Cancel ', '') || 'Editing') + ')' : ''}</span>
+        <span>✨ {isEditing ? (i18n.diff?.modifiedEditing || '修改后（编辑模式）') : (i18n.diff?.modified || '修改后')}</span>
       </div>
       <div class="panel-content">
         {#if isLoading}
@@ -325,12 +327,12 @@
           <textarea
             class="edit-textarea"
             bind:value={editedModified}
-            placeholder={i18n.diff?.editPlaceholder || 'Edit the modified content here...'}
+            placeholder={i18n.diff?.editPlaceholder || '在此编辑修改后的内容...'}
             rows={Math.max(10, editedModified.split('\n').length)}
           ></textarea>
           <div class="edit-actions">
-            <button class="btn-secondary" on:click={cancelEdit}>{i18n.diff?.cancel || 'Cancel'}</button>
-            <button class="btn-primary" on:click={saveEdit}>{i18n.diff?.save || 'Save'}</button>
+            <button class="btn-secondary" on:click={cancelEdit}>{i18n.diff?.cancel || '取消'}</button>
+            <button class="btn-primary" on:click={saveEdit}>{i18n.diff?.save || '保存'}</button>
           </div>
         {:else}
           <div class="text-content">

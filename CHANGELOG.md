@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.19] - 2026-03-16
+
+### ✨ Added / 新增
+- 📤 **新增历史记录导入导出功能** — 支持备份和迁移操作历史
+- 智能合并策略：相同记录保留较新版本，用户无感知
+- 导出为标准 JSON 格式，便于备份和跨设备迁移
+- 在设置面板的「界面设置」中添加导入导出按钮
+- **New: History Import/Export** — Backup and migrate operation history
+- Smart merge: newer version kept for duplicates, seamless user experience
+- Export to standard JSON format for backup and cross-device migration
+- Import/Export buttons added to Settings → UI Settings
+
+### 🔧 Improved / 优化
+- 🔓 降低最低版本要求至 2.8.5，支持更多思源用户 / Lowered minimum version to 2.8.5 for broader compatibility
+
 ## [0.1.18] - 2026-02-21
 
 ### ✨ Added / 新增

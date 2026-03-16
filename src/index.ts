@@ -10,7 +10,7 @@ import { blockService } from './services/block';
 import { historyService } from './services/history';
 import { FloatingToolbar } from './libs/floating-toolbar';
 import { ContextMenuManager } from './libs/context-menu';
-import { showDialog } from './libs/dialog';
+import { showDialog, updateDialogTitle } from './libs/dialog';
 import type { AIOperationType } from './types';
 import type { AIChatMessage } from './types';
 import type { AIResponse } from './types';
@@ -26,7 +26,10 @@ export default class AIAssistantPlugin extends Plugin {
     private floatingToolbar: FloatingToolbar | null = null;
     private contextMenuManager: ContextMenuManager | null = null;
     private settingsDialog: Dialog | null = null;
+    private settingsPanelComponent: SettingsPanel | null = null;
     private diffDialog: Dialog | null = null;
+    private historyDialog: Dialog | null = null;
+    private historyViewerComponent: DiffHistoryReadonlyViewer | null = null;
     private customInputDialog: Dialog | null = null;
     private customPromptDialogComponent: any = null;
     private chatPanelComponent: ChatPanel | null = null;
@@ -47,8 +50,12 @@ export default class AIAssistantPlugin extends Plugin {
     private reliabilityCheckToken: number = 0; // 模型可靠性检查令牌（防止旧检查误报）
     private silentlyCheckedProviderIds: Set<string> = new Set(); // 已做过静默连通性探测的提供商
     private blockIconClickHandler: ((event: CustomEvent) => void) | null = null; // eventBus监听器引用
+    private i18nWatchTimer: number | null = null;
+    private currentLangCode: 'zh_CN' | 'en_US' = 'zh_CN';
 
     async onload() {
+        await this.syncRuntimeI18n(true);
+
         // Initialize settings service
         settingsService.init(this);
         await settingsService.loadSettings();
@@ -96,6 +103,8 @@ export default class AIAssistantPlugin extends Plugin {
 
         // Initialize context menu
         this.initContextMenu();
+
+        this.startI18nWatch();
     }
 
     onLayoutReady() {
@@ -131,10 +140,30 @@ export default class AIAssistantPlugin extends Plugin {
             this.diffDialog = null;
         }
 
+        if (this.historyDialog) {
+            this.historyDialog.destroy();
+            this.historyDialog = null;
+        }
+
         // Clean up chat panel
         if (this.chatPanelComponent) {
             this.chatPanelComponent.$destroy();
             this.chatPanelComponent = null;
+        }
+
+        if (this.settingsPanelComponent) {
+            this.settingsPanelComponent.$destroy();
+            this.settingsPanelComponent = null;
+        }
+
+        if (this.historyViewerComponent) {
+            this.historyViewerComponent.$destroy();
+            this.historyViewerComponent = null;
+        }
+
+        if (this.i18nWatchTimer) {
+            clearInterval(this.i18nWatchTimer);
+            this.i18nWatchTimer = null;
         }
 
         // Remove eventBus listener
@@ -273,20 +302,26 @@ export default class AIAssistantPlugin extends Plugin {
                             );
                         }
                         
-                        // 5. 更新视图
-                        this.updateDiffViewer(response.content, original, selectedText, selectionStart, selectionEnd, sessionId);
-                    } else {
-                        this.currentDiffViewer?.$set({ isLoading: false });
-                        alert(this.i18n?.messages?.modelError || '模型处理失败，请重试或更换模型');
-                    }
-                } catch (error) {
-                    if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
-                        return;
-                    }
-                    alert(this.i18n?.messages?.error || '处理失败');
+                    // 5. 更新视图
+                    this.updateDiffViewer(response.content, original, selectedText, selectionStart, selectionEnd, sessionId);
+                } else {
                     this.currentDiffViewer?.$set({ isLoading: false });
+                    alert(this.i18n?.messages?.modelError || '模型处理失败，请重试或更换模型');
                 }
-            },
+            } catch (error) {
+                if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
+                    return;
+                }
+                // 不在控制台输出特定网络连接错误，防止干扰用户
+                const errorStr = String(error);
+                if (!errorStr.includes('ERR_PROXY_CONNECTION_FAILED') && !errorStr.includes('Failed to fetch')) {
+                    console.error('[AI Assistant] Operation error:', error);
+                }
+
+                alert(this.i18n?.messages?.error || '处理失败');
+                this.currentDiffViewer?.$set({ isLoading: false });
+            }
+        },
             onCustomInput: (selectedText, originalText, blockId, selectionStart, selectionEnd) => {
                 // 显示自定义输入对话框
                 this.showCustomInputDialog(selectedText, originalText, blockId, selectionStart, selectionEnd);
@@ -372,6 +407,11 @@ export default class AIAssistantPlugin extends Plugin {
                 if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
                     return;
                 }
+                // 不在控制台输出特定网络连接错误
+                const errorStr = String(error);
+                if (!errorStr.includes('ERR_PROXY_CONNECTION_FAILED') && !errorStr.includes('Failed to fetch')) {
+                    console.error('[AI Assistant] Model change operation error:', error);
+                }
                 alert(this.i18n?.messages?.error || '处理失败');
             }
         }
@@ -420,13 +460,17 @@ export default class AIAssistantPlugin extends Plugin {
             });
 
             if (!streamResponse?.content || !streamResponse.content.trim()) {
-                console.warn('[AI Assistant] Streaming returned empty final content, fallback to non-streaming once.');
+                // 仅在非网络连接错误时提示流式降级
                 return aiService.chatCompletion(messages);
             }
 
             return streamResponse;
         } catch (streamError) {
-            console.warn('[AI Assistant] Streaming failed, fallback to non-streaming:', streamError);
+            // 仅在非网络连接错误时记录流式失败日志
+            const errorStr = String(streamError);
+            if (!errorStr.includes('ERR_PROXY_CONNECTION_FAILED') && !errorStr.includes('Failed to fetch') && !errorStr.includes('AbortError')) {
+                console.warn('[AI Assistant] Streaming failed, fallback to non-streaming:', streamError);
+            }
             if (onReasoning) {
                 onReasoning('');
             }
@@ -520,12 +564,15 @@ export default class AIAssistantPlugin extends Plugin {
                 return;
             }
 
-            // 静默检测失败不弹窗，避免干扰正常使用
-            console.warn('[AI Assistant] Silent connectivity check skipped/fail:', {
-                provider: `${provider.name} (${provider.model})`,
-                baseURL: provider.baseURL,
-                error: error instanceof Error ? error.message : String(error)
-            });
+            // 静默检测失败不弹窗也不在控制台输出网络报错
+            const errorStr = String(error);
+            if (!errorStr.includes('ERR_PROXY_CONNECTION_FAILED') && !errorStr.includes('Failed to fetch') && !errorStr.includes('AbortError')) {
+                console.warn('[AI Assistant] Silent connectivity check skipped/fail:', {
+                    provider: `${provider.name} (${provider.model})`,
+                    baseURL: provider.baseURL,
+                    error: error instanceof Error ? error.message : String(error)
+                });
+            }
         } finally {
             if (timeoutId) {
                 clearTimeout(timeoutId);
@@ -729,12 +776,14 @@ export default class AIAssistantPlugin extends Plugin {
         const container = document.createElement('div');
         container.style.height = '500px';
 
-        new SettingsPanel({
+        this.settingsPanelComponent = new SettingsPanel({
             target: container,
             props: {
                 onClose: () => {
+                    this.settingsPanelComponent?.$destroy();
                     this.settingsDialog?.destroy();
                     this.settingsDialog = null;
+                    this.settingsPanelComponent = null;
                 },
                 onProviderChange: () => {
                     // 同步 AI 服务提供商
@@ -757,7 +806,9 @@ export default class AIAssistantPlugin extends Plugin {
             width: '600px',
             height: '500px',
             destroyCallback: () => {
+                this.settingsPanelComponent?.$destroy();
                 this.settingsDialog = null;
+                this.settingsPanelComponent = null;
             }
         });
     }
@@ -769,7 +820,11 @@ export default class AIAssistantPlugin extends Plugin {
         const container = document.createElement('div');
         container.style.height = '100%';
 
-        const historyViewer = new DiffHistoryReadonlyViewer({
+        if (this.historyDialog) {
+            this.historyDialog.destroy();
+        }
+
+        this.historyViewerComponent = new DiffHistoryReadonlyViewer({
             target: container,
             props: {
                 historyId,
@@ -777,22 +832,24 @@ export default class AIAssistantPlugin extends Plugin {
             }
         });
 
-        const historyDialog = showDialog({
+        this.historyDialog = showDialog({
             title: this.i18n.history?.viewHistory || '历史版本',
             content: container,
             width: '800px',
             height: '600px',
             destroyCallback: () => {
-                historyViewer.$destroy();
+                this.historyViewerComponent?.$destroy();
+                this.historyViewerComponent = null;
+                this.historyDialog = null;
             }
         });
         
-        historyViewer.$on('close', () => {
-            historyDialog.destroy();
+        this.historyViewerComponent.$on('close', () => {
+            this.historyDialog?.destroy();
         });
 
         // 监听版本回退事件
-        historyViewer.$on('rollback', async (event: CustomEvent<{ version: OperationVersion }>) => {
+        this.historyViewerComponent.$on('rollback', async (event: CustomEvent<{ version: OperationVersion }>) => {
             const version = event.detail.version;
             
             try {
@@ -814,7 +871,7 @@ export default class AIAssistantPlugin extends Plugin {
                 }
 
                 // 3. 关闭对话框
-                historyDialog.destroy();
+                this.historyDialog?.destroy();
                 
             } catch (error) {
                 // 回退失败，静默处理
@@ -885,9 +942,11 @@ export default class AIAssistantPlugin extends Plugin {
                 let newContent: string;
                 let appliedSelectionStart = -1;
                 
-                // 右键菜单场景：整块替换，直接使用 AI 结果作为新内容
-                if (this.isFullBlockReplace) {
-                    newContent = result;
+// 右键菜单场景：整块替换，直接使用 AI 结果作为新内容
+          if (this.isFullBlockReplace) {
+            newContent = result;
+            // 将多段内容转换为假换行（单换行），避免触发思源重建索引
+            newContent = newContent.replace(/\n\n+/g, '\n');
                 } else {
                     const selectedText = this.currentSelectedText;
                     if (!selectedText || selectedText.length === 0) {
@@ -936,16 +995,20 @@ export default class AIAssistantPlugin extends Plugin {
                         }
                     }
 
-                    if (replaceStart >= 0 && replaceEnd > replaceStart) {
-                        const beforeSelection = this.currentOriginalText.substring(0, replaceStart);
-                        const afterSelection = this.currentOriginalText.substring(replaceEnd);
-                        newContent = beforeSelection + result + afterSelection;
-                        appliedSelectionStart = replaceStart;
-                    } else if (targetBlockId) {
-                        const fallbackReplace = await blockService.replaceSelectedText(targetBlockId, selectedText, result);
-                        if (fallbackReplace.success && fallbackReplace.content !== undefined) {
-                            newContent = fallbackReplace.content;
-                            appliedSelectionStart = this.findBestSelectionIndex(newContent, result, this.currentSelectionStart);
+if (replaceStart >= 0 && replaceEnd > replaceStart) {
+              const beforeSelection = this.currentOriginalText.substring(0, replaceStart);
+              const afterSelection = this.currentOriginalText.substring(replaceEnd);
+              newContent = beforeSelection + result + afterSelection;
+              // 将多段内容转换为假换行（单换行），避免触发思源重建索引
+              newContent = newContent.replace(/\n\n+/g, '\n');
+              appliedSelectionStart = replaceStart;
+} else if (targetBlockId) {
+              const fallbackReplace = await blockService.replaceSelectedText(targetBlockId, selectedText, result);
+              if (fallbackReplace.success && fallbackReplace.content !== undefined) {
+                newContent = fallbackReplace.content;
+                // 将多段内容转换为假换行（单换行），避免触发思源重建索引
+                newContent = newContent.replace(/\n\n+/g, '\n');
+                appliedSelectionStart = this.findBestSelectionIndex(newContent, result, this.currentSelectionStart);
                         } else {
                             alert(this.i18n?.messages?.applyFailedSelection || 'Apply failed: selected text not found in original');
                             this.diffDialog?.destroy();
@@ -1193,41 +1256,8 @@ export default class AIAssistantPlugin extends Plugin {
             }
         });
 
-        // 获取操作名称：自定义按钮从设置中读取实际名称
-        const getOperationName = (op: AIOperationType): string => {
-            const staticNames: Record<string, string> = {
-                chat: this.i18n.operations?.chat || 'Chat',
-                polish: this.i18n.operations?.polish || 'Polish',
-                translate: this.i18n.operations?.translate || 'Translate',
-                summarize: this.i18n.operations?.summarize || 'Summarize',
-                expand: this.i18n.operations?.expand || 'Expand',
-                condense: this.i18n.operations?.condense || 'Condense',
-                rewrite: this.i18n.operations?.rewrite || 'Rewrite',
-                continue: this.i18n.operations?.continue || 'Continue',
-                custom1: this.i18n.operations?.custom1 || 'Custom 1',
-                custom2: this.i18n.operations?.custom2 || 'Custom 2',
-                custom3: this.i18n.operations?.custom3 || 'Custom 3',
-                customInput: this.i18n.operations?.customInput || 'Chat',
-                directEdit: this.i18n.diff?.directEdit || 'Direct Edit',
-                rollback: this.i18n.history?.rollback || 'Rollback',
-                original: this.i18n.history?.original || 'Original'
-            };
-            
-            const opStr = op as string;
-            // 如果是自定义按钮，从设置中读取实际名称
-            if (opStr.startsWith('custom')) {
-                const settings = settingsService.getSettings();
-                const customBtn = settings.customButtons.find(b => b.id === opStr);
-                if (customBtn) {
-                    return customBtn.name;
-                }
-            }
-            
-            return staticNames[opStr] || opStr;
-        };
-
         this.diffDialog = showDialog({
-            title: `${getOperationName(operation)} - ${this.i18n.diff?.title || 'Diff View'}`,
+            title: this.getDiffDialogTitle(operation),
             content: container,
             width: '800px',
             height: '600px',
@@ -1295,6 +1325,108 @@ export default class AIAssistantPlugin extends Plugin {
             reasoning: reasoningEnabled ? (reasoning || '') : '',
             hasReasoning: normalizedReasoning.length > 0
         });
+    }
+
+    private startI18nWatch(): void {
+        this.currentLangCode = this.getUiLangCode();
+        this.i18nWatchTimer = window.setInterval(() => {
+            void this.syncRuntimeI18n();
+        }, 1000);
+    }
+
+    private getUiLangCode(): 'zh_CN' | 'en_US' {
+        const lang = (window as any)?.siyuan?.config?.lang;
+        return lang === 'en_US' || lang === 'en-US' ? 'en_US' : 'zh_CN';
+    }
+
+    private async loadRuntimeI18n(langCode: 'zh_CN' | 'en_US'): Promise<Record<string, any> | null> {
+        try {
+            const baseUrl = new URL('.', import.meta.url).href;
+            const response = await fetch(`${baseUrl}i18n/${langCode}.json`, { cache: 'no-cache' });
+            if (!response.ok) {
+                return null;
+            }
+
+            return await response.json();
+        } catch {
+            return null;
+        }
+    }
+
+    private async syncRuntimeI18n(force = false): Promise<void> {
+        const nextLangCode = this.getUiLangCode();
+        if (!force && nextLangCode === this.currentLangCode) {
+            return;
+        }
+
+        const nextI18n = await this.loadRuntimeI18n(nextLangCode);
+        if (!nextI18n) {
+            this.currentLangCode = nextLangCode;
+            return;
+        }
+
+        this.currentLangCode = nextLangCode;
+        this.i18n = nextI18n;
+        this.applyI18nToOpenViews();
+    }
+
+    private applyI18nToOpenViews(): void {
+        aiService.setI18n(this.i18n || {});
+        this.chatPanelComponent?.$set({ i18n: this.i18n });
+        this.settingsPanelComponent?.$set({ i18n: this.i18n });
+        this.customPromptDialogComponent?.$set?.({ i18n: this.i18n });
+        this.currentDiffViewer?.$set({ i18n: this.i18n });
+        this.historyViewerComponent?.$set({ i18n: this.i18n });
+
+        this.floatingToolbar?.setI18n(this.i18n);
+        this.contextMenuManager?.setI18n(this.i18n);
+
+        if (this.diffDialog) {
+            updateDialogTitle(this.diffDialog, this.getDiffDialogTitle(this.currentOperation));
+        }
+
+        if (this.historyDialog) {
+            updateDialogTitle(this.historyDialog, this.i18n.history?.viewHistory || '历史版本');
+        }
+
+        if (this.customInputDialog) {
+            updateDialogTitle(this.customInputDialog, this.i18n?.customInput?.title || '💬 对话');
+        }
+    }
+
+    private getOperationNameForDialog(op: AIOperationType): string {
+        const staticNames: Record<string, string> = {
+            chat: this.i18n.operations?.chat || 'Chat',
+            polish: this.i18n.operations?.polish || 'Polish',
+            translate: this.i18n.operations?.translate || 'Translate',
+            summarize: this.i18n.operations?.summarize || 'Summarize',
+            expand: this.i18n.operations?.expand || 'Expand',
+            condense: this.i18n.operations?.condense || 'Condense',
+            rewrite: this.i18n.operations?.rewrite || 'Rewrite',
+            continue: this.i18n.operations?.continue || 'Continue',
+            custom1: this.i18n.operations?.custom1 || 'Custom 1',
+            custom2: this.i18n.operations?.custom2 || 'Custom 2',
+            custom3: this.i18n.operations?.custom3 || 'Custom 3',
+            customInput: this.i18n.operations?.customInput || 'Chat',
+            directEdit: this.i18n.diff?.directEdit || 'Direct Edit',
+            rollback: this.i18n.history?.rollback || 'Rollback',
+            original: this.i18n.history?.original || 'Original'
+        };
+
+        const opStr = op as string;
+        if (opStr.startsWith('custom')) {
+            const settings = settingsService.getSettings();
+            const customBtn = settings.customButtons.find(button => button.id === opStr);
+            if (customBtn) {
+                return customBtn.name;
+            }
+        }
+
+        return staticNames[opStr] || opStr;
+    }
+
+    private getDiffDialogTitle(operation: AIOperationType): string {
+        return `${this.getOperationNameForDialog(operation)} - ${this.i18n.diff?.title || 'Diff View'}`;
     }
 
     /**

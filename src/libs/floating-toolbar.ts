@@ -56,6 +56,17 @@ export class FloatingToolbar {
         this.bindEvents();
     }
 
+    public setI18n(i18n: Record<string, any>): void {
+        this.i18n = i18n || {};
+        this.refreshToolbar();
+        this.refreshToolbarHeader();
+
+        if (this.modelDropdownElement) {
+            this.hideModelDropdown();
+            this.showModelDropdown();
+        }
+    }
+
     private bindEvents(): void {
         let selectionTimeout: number;
 
@@ -475,6 +486,35 @@ export class FloatingToolbar {
      */
     public updateToolbar(): void {
         this.refreshToolbar();
+        this.refreshToolbarHeader();
+    }
+
+    private refreshToolbarHeader(): void {
+        if (!this.toolbarElement) {
+            return;
+        }
+
+        const providerNameEl = this.toolbarElement.querySelector('.provider-name') as HTMLElement | null;
+        if (providerNameEl) {
+            providerNameEl.title = this.i18n.toolbar?.switchModel || '点击切换模型';
+        }
+
+        const pinBtn = this.toolbarElement.querySelector('.btn-pin') as HTMLElement | null;
+        if (pinBtn) {
+            pinBtn.title = this.isPinned
+                ? (this.i18n.toolbar?.pinned || '已固定，点击取消固定')
+                : (this.i18n.toolbar?.pin || '固定位置');
+        }
+
+        const settingsBtn = this.toolbarElement.querySelector('.btn-settings') as HTMLElement | null;
+        if (settingsBtn) {
+            settingsBtn.title = this.i18n.settings?.title || '设置';
+        }
+
+        const closeBtn = this.toolbarElement.querySelector('.btn-close') as HTMLElement | null;
+        if (closeBtn) {
+            closeBtn.title = this.i18n.close || '关闭';
+        }
     }
 
     private createModelDropdown(): void {
@@ -667,7 +707,7 @@ export class FloatingToolbar {
             <span class="drag-handle" style="cursor: move; padding: 2px 4px; margin-right: 4px; color: var(--b3-theme-on-surface, #999);">⋮⋮</span>
             <span class="provider-name" style="cursor: pointer; font-weight: 500; font-size: 12px; color: var(--b3-theme-on-surface, #666); flex: 1;" title="${this.i18n.toolbar?.switchModel || '点击切换模型'}">${providerInfo}</span>
             <button class="btn-pin" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-right: 4px; opacity: 0.6;" title="${this.i18n.toolbar?.pin || '固定位置'}">📌</button>
-            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 6px;" title="${this.i18n.settings || '设置'}">⚙️</button>
+            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 6px;" title="${this.i18n.settings?.title || '设置'}">⚙️</button>
             <button class="btn-close" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-left: 4px; color: var(--b3-theme-on-surface, #999);" title="${this.i18n.close || '关闭'}">✕</button>
         `;
         

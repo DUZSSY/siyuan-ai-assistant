@@ -61,6 +61,10 @@
     }
   }
 
+  function getLocale(): string {
+    return i18n.meta?.languageName === 'English' ? 'en-US' : 'zh-CN';
+  }
+
   function getOperationName(op: AIOperationType | 'original'): string {
     if (op === 'original') return i18n.history?.original || '原文';
     const names: Record<string, string> = {
@@ -96,7 +100,7 @@
 
   function formatTime(timestamp: number): string {
     const date = new Date(timestamp);
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString(getLocale(), {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
@@ -128,7 +132,7 @@
   {:else if !history}
     <div class="empty-state">
       <p>{i18n.history?.noHistory || '未发现历史记录'}</p>
-      <button class="btn-close-simple" on:click={() => dispatch('close')}>关闭</button>
+      <button class="btn-close-simple" on:click={() => dispatch('close')}>{i18n.history?.close || i18n.close || '关闭'}</button>
     </div>
   {:else}
     <div class="history-header">

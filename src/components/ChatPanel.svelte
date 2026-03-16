@@ -303,8 +303,12 @@
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
+  function getLocale(): string {
+    return i18n.meta?.languageName === 'English' ? 'en-US' : 'zh-CN';
+  }
+
   function formatTime(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString('zh-CN', { 
+    return new Date(timestamp).toLocaleTimeString(getLocale(), {
       hour: '2-digit', 
       minute: '2-digit' 
     });
@@ -325,7 +329,7 @@
       <button class="btn-icon" on:click={startNewChat} title={i18n.chat?.newChat || 'New Chat'}>
         ➕
       </button>
-      <button class="btn-icon" on:click={onOpenSettings} title={i18n.settings || 'Settings'}>
+      <button class="btn-icon" on:click={onOpenSettings} title={i18n.settings?.title || 'Settings'}>
         ⚙️
       </button>
     </div>

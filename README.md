@@ -181,12 +181,19 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Recent Updates
 
+### v0.1.19
+- 📤 **New: History Import/Export** — Backup and migrate operation history
+- Smart merge: newer version kept for duplicates, seamless user experience
+- Export to standard JSON format for backup and cross-device migration
+- Import/Export buttons added to Settings → UI Settings
+- 🔓 Lowered minimum version to 2.8.5 for broader SiYuan compatibility
+
 ### v0.1.18
 - 📜 **New: Operation History** — Complete record of text processing workflow
-  - Save original and modified text for each AI operation (no truncation)
-  - Support recording regenerate and model switch chains
-  - Smart sampling: max 8 histories, 6 versions each (first 3 + last 3)
-  - Read-only view: display diff between original and any version
+- Save original and modified text for each AI operation (no truncation)
+- Support recording regenerate and model switch chains
+- Smart sampling: max 8 histories, 6 versions each (first 3 + last 3)
+- Read-only view: display diff between original and any version
 - 🌊 **New: Streaming Response** — Real-time AI content display with reasoning chain support
 - 🎯 Optimized AI system prompts for better output format control
 - 🔧 Improved DiffViewer model dropdown scrolling experience
@@ -194,21 +201,12 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ### v0.1.17
 - 💬 **New: Direct Chat Dialog** — Added standalone chat interface alongside existing quick action buttons
-  - "💬 Chat" button positioned at the far right with visual separator for clear distinction
-  - Supports real-time intelligent text modification through natural language instructions
-  - Chat history tracking with persistent conversation storage
-  - Smart input with customizable prompt suggestions
+- "💬 Chat" button positioned at the far right with visual separator for clear distinction
+- Supports real-time intelligent text modification through natural language instructions
+- Chat history tracking with persistent conversation storage
+- Smart input with customizable prompt suggestions
 - 🔗 Optimized connection stability and display performance
 - ⚡ Accelerated result display speed for smoother experience
-
-### v0.1.16
-- ⏱️ Increased timeout from 60s to 180s for better large model support
-- 📝 Increased default max_tokens from 2048 to 4096 to avoid truncation
-- 🏷️ Fixed DiffViewer title to show custom button names
-- ⚠️ Added detailed error messages (timeout, network, auth, rate limit, etc.)
-- 🔧 Fixed empty prompt handling for custom buttons
-- 🛡️ Added non-empty validation for custom button configuration
-- 📜 Fixed model dropdown scroll issue for long provider lists
 
 [View full changelog](https://github.com/DUZSSY/siyuan-ai-assistant/blob/main/CHANGELOG.md)
 

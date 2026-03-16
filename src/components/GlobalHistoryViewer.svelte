@@ -46,6 +46,10 @@
     isLoading = false;
   }
 
+  function getLocale(): string {
+    return i18n.meta?.languageName === 'English' ? 'en-US' : 'zh-CN';
+  }
+
   // 获取操作名称
   function getOperationName(op: AIOperationType | 'original' | 'regenerate' | 'switchModel'): string {
     if (op === 'original') return i18n.history?.original || '原文';
@@ -74,7 +78,7 @@
   // 格式化时间
   function formatDateTime(timestamp: number): string {
     const date = new Date(timestamp);
-    return date.toLocaleString('zh-CN', { 
+    return date.toLocaleString(getLocale(), { 
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

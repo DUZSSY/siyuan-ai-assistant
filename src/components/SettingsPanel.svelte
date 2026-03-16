@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { settingsService } from '../services/settings';
   import { aiService } from '../services/ai';
-  import { showDialog } from '../libs/dialog';
+  import { showDialog, updateDialogTitle } from '../libs/dialog';
   import type { AIProvider, CustomButton, ToolbarButtonConfig } from '../types';
   import { DEFAULT_PROVIDER_TEMPLATES } from '../types';
   import { Dialog } from 'siyuan';
@@ -36,6 +36,8 @@ import GlobalHistoryViewer from './GlobalHistoryViewer.svelte';
   let historyVersionLimit: 'all' | '6versions' = 'all';
   let enableStreamingOutput: boolean = false;
   let enableReasoningOutput: boolean = true;
+  let globalHistoryViewer: GlobalHistoryViewer | null = null;
+  let globalHistoryDialog: Dialog | null = null;
 
 
   // Editing states
@@ -48,6 +50,14 @@ import GlobalHistoryViewer from './GlobalHistoryViewer.svelte';
   onMount(() => {
     loadSettings();
   });
+
+  $: if (globalHistoryViewer) {
+    globalHistoryViewer.$set({ i18n });
+  }
+
+  $: if (globalHistoryDialog) {
+    updateDialogTitle(globalHistoryDialog, i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'Operation History');
+  }
 
   function loadSettings() {
     const settings = settingsService.getSettings();
@@ -65,13 +75,17 @@ import GlobalHistoryViewer from './GlobalHistoryViewer.svelte';
   // Provider name to i18n key mapping
   const providerNameKeys: Record<string, string> = {
     'Ollama (本地)': 'ollama',
+    'Ollama (Local)': 'ollama',
     'OpenAI': 'openai',
     'DeepSeek': 'deepseek',
     'Moonshot': 'moonshot',
     '智谱AI (Z.ai)': 'zhipu',
+    'Zhipu AI (Z.ai)': 'zhipu',
     'Claude (Anthropic)': 'claude',
     '自定义 OpenAI 格式': 'customOpenAI',
-    'GLM（免费试用-额度有限-仅供测试）': 'testGLM'
+    'Custom OpenAI Format': 'customOpenAI',
+    'GLM（免费试用-额度有限-仅供测试）': 'testGLM',
+    'GLM (Free Trial - Limited - For Testing Only)': 'testGLM'
   };
 
   function getProviderName(name: string): string {
@@ -250,7 +264,7 @@ async function saveCustomButtons() {
       enableOperationHistory,
       historyVersionLimit
     });
-    showSaveMessage(i18n.settingsPanel?.alerts?.historySaved || 'History settings saved');
+    showSaveMessage(i18n.settingsPanel?.ui?.historySaved || 'History settings saved');
   }
 
   async function saveStreamingSettings() {
@@ -808,24 +822,26 @@ async function saveCustomButtons() {
     const container = document.createElement('div');
     container.style.height = '100%';
     
-    const historyViewer = new GlobalHistoryViewer({
+    globalHistoryViewer = new GlobalHistoryViewer({
       target: container,
       props: {
         i18n: i18n
       }
     });
     
-    historyViewer.$on('close', () => {
-      historyDialog.destroy();
+    globalHistoryViewer.$on('close', () => {
+      globalHistoryDialog?.destroy();
     });
     
-    const historyDialog = showDialog({
-      title: i18n.history?.globalTitle || '操作历史记录',
+    globalHistoryDialog = showDialog({
+      title: i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'Operation History',
       content: container,
       width: '800px',
       height: '600px',
       destroyCallback: () => {
-        historyViewer.$destroy();
+        globalHistoryViewer?.$destroy();
+        globalHistoryViewer = null;
+        globalHistoryDialog = null;
       }
     });
   }
@@ -835,7 +851,7 @@ async function saveCustomButtons() {
   <div class="settings-header">
     <h2>⚙️ {i18n.settingsPanel?.title || 'AI Assistant Settings'}</h2>
     <div class="header-buttons">
-      <button class="btn-history" on:click={openHistoryDialog} title={i18n.history?.globalTitle || '历史记录'}>📜</button>
+      <button class="btn-history" on:click={openHistoryDialog} title={i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'Operation History'}>📜</button>
       <button class="btn-donate" on:click={() => window.open('https://www.yuque.com/duzssy/mop740/fm59mkeo86fx5mu9?singleDoc', '_blank')} title={i18n.settingsPanel?.donate || 'Support with Donation'}>❤️</button>
       <button class="btn-close" on:click={onClose}>✕</button>
     </div>
@@ -1020,7 +1036,7 @@ async function saveCustomButtons() {
                 <div class="provider-card" class:default={provider.isDefault}>
                   <div class="provider-info">
                     <div class="provider-name">
-                      {provider.name}
+                      {getProviderName(provider.name)}
                       {#if provider.isDefault}
                         <span class="badge">{i18n.providers?.default || 'Default'}</span>
                       {/if}
@@ -1190,7 +1206,7 @@ async function saveCustomButtons() {
 
             <div class="actions-row">
               <button class="btn-primary" on:click={openHistoryDialog}>
-                <span>📜</span> {i18n.history?.globalTitle || 'View Global History'}
+                <span>📜</span> {i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'View Global History'}
               </button>
             </div>
           </div>

@@ -1,11 +1,12 @@
 import type { Plugin } from 'siyuan';
 import type { AIOperationType } from '../types';
-import type { 
-  OperationHistory, 
-  OperationVersion, 
-  OperationHistoryStore
+import type {
+  OperationHistory,
+  OperationVersion,
+  OperationHistoryStore,
+  HistoryExportData
 } from '../types/history';
-import { HISTORY_STORE_VERSION, MAX_HISTORY_COUNT, MAX_VERSIONS_PER_HISTORY } from '../types/history';
+import { HISTORY_STORE_VERSION, MAX_HISTORY_COUNT, MAX_VERSIONS_PER_HISTORY, HISTORY_EXPORT_VERSION } from '../types/history';
 import { settingsService } from './settings';
 
 const HISTORY_STORAGE_KEY = 'ai-assistant-operation-history';
@@ -35,15 +36,15 @@ export class HistoryService {
       return this.getEmptyStore();
     }
 
-    try {
-      const data = await this.plugin.loadData(HISTORY_STORAGE_KEY);
-      if (data && this.isValidStore(data)) {
-        this.cache = data;
-        return data;
-      }
-    } catch (error) {
-      // 静默失败，不影响主功能
+try {
+    const data = await this.plugin.loadData(HISTORY_STORAGE_KEY);
+    if (data && this.isValidStore(data)) {
+      this.cache = data;
+      return data;
     }
+  } catch (error) {
+    console.error('[AI Assistant] Failed to load history store:', error);
+  }
 
     return this.getEmptyStore();
   }
@@ -55,12 +56,12 @@ export class HistoryService {
   async saveStore(store: OperationHistoryStore): Promise<void> {
     if (!this.plugin) return;
 
-    try {
-      await this.plugin.saveData(HISTORY_STORAGE_KEY, store);
-      this.cache = store;
-    } catch (error) {
-      // 静默失败，不影响主功能
-    }
+try {
+    await this.plugin.saveData(HISTORY_STORAGE_KEY, store);
+    this.cache = store;
+  } catch (error) {
+    console.error('[AI Assistant] Failed to save history store:', error);
+  }
   }
 
   /**
@@ -234,6 +235,119 @@ export class HistoryService {
     return (
       store.version === HISTORY_STORE_VERSION &&
       Array.isArray(store.histories)
+    );
+  }
+
+  // ==================== 导入导出功能 ====================
+
+  /**
+   * 导出历史记录
+   * 返回导出数据对象，供上层处理文件保存
+   */
+  async exportHistories(): Promise<HistoryExportData> {
+    const store = await this.loadStore();
+    return {
+      version: HISTORY_EXPORT_VERSION,
+      exportDate: new Date().toISOString(),
+      histories: store.histories
+    };
+  }
+
+  /**
+   * 导入历史记录（智能合并）
+   * - 相同ID的记录：保留更新时间较新的版本
+   * - 不同ID的记录：直接合并
+   * - 用户无感知，自动处理冲突
+   * @returns 返回导入结果统计
+   */
+  async importHistories(
+    importData: HistoryExportData,
+    onProgress?: (message: string) => void
+  ): Promise<{ added: number; updated: number; skipped: number }> {
+    // 验证导入数据格式
+    if (!this.isValidExportData(importData)) {
+      throw new Error('Invalid history export data format');
+    }
+
+    const currentStore = await this.loadStore();
+    const result = { added: 0, updated: 0, skipped: 0 };
+
+    // 创建ID到历史记录的映射，便于快速查找
+    const historyMap = new Map<string, OperationHistory>();
+    currentStore.histories.forEach(h => historyMap.set(h.id, h));
+
+    for (const importHistory of importData.histories) {
+      // 验证单条历史记录格式
+      if (!this.isValidHistory(importHistory)) {
+        result.skipped++;
+        continue;
+      }
+
+      const existingHistory = historyMap.get(importHistory.id);
+
+      if (!existingHistory) {
+        // 新记录，直接添加
+        historyMap.set(importHistory.id, importHistory);
+        result.added++;
+      } else {
+        // 已存在，比较更新时间，保留较新的
+        if (importHistory.updatedAt > existingHistory.updatedAt) {
+          historyMap.set(importHistory.id, importHistory);
+          result.updated++;
+        } else {
+          result.skipped++;
+        }
+      }
+    }
+
+    // 转换回数组并按更新时间排序（最新的在前）
+    const mergedHistories = Array.from(historyMap.values())
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, MAX_HISTORY_COUNT); // 确保不超过最大数量
+
+    // 保存合并后的数据
+    const newStore: OperationHistoryStore = {
+      version: HISTORY_STORE_VERSION,
+      histories: mergedHistories
+    };
+    await this.saveStore(newStore);
+
+    const message = `导入完成: 新增 ${result.added} 条, 更新 ${result.updated} 条, 跳过 ${result.skipped} 条`;
+    onProgress?.(message);
+
+    return result;
+  }
+
+  /**
+   * 验证导出数据格式
+   */
+  private isValidExportData(data: unknown): data is HistoryExportData {
+    if (!data || typeof data !== 'object') return false;
+    const exportData = data as HistoryExportData;
+    return (
+      typeof exportData.version === 'number' &&
+      exportData.version >= 1 &&
+      typeof exportData.exportDate === 'string' &&
+      Array.isArray(exportData.histories)
+    );
+  }
+
+  /**
+   * 验证单条历史记录格式
+   */
+  private isValidHistory(data: unknown): data is OperationHistory {
+    if (!data || typeof data !== 'object') return false;
+    const history = data as OperationHistory;
+    return (
+      typeof history.id === 'string' &&
+      typeof history.title === 'string' &&
+      typeof history.blockId === 'string' &&
+      Array.isArray(history.versions) &&
+      history.versions.length > 0 &&
+      typeof history.totalVersions === 'number' &&
+      typeof history.createdAt === 'number' &&
+      typeof history.updatedAt === 'number' &&
+      typeof history.finalApplied === 'boolean'
     );
   }
 }
