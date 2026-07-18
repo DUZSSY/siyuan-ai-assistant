@@ -13,6 +13,9 @@
   export let i18n: Record<string, any> = {};
   export let reasoning: string = '';
   export let hasReasoning: boolean = false;
+  export let leftTitle: string = '';
+  export let rightTitle: string = '';
+  export let comparisonTitle: string = '';
   
   export let historyId: string | null = null;
   export let isLoading: boolean = false;
@@ -79,10 +82,17 @@
       condense: currentI18n.operations?.condense || '精简',
       rewrite: currentI18n.operations?.rewrite || '改写',
       continue: currentI18n.operations?.continue || '续写',
+      undoLast: currentI18n.operations?.undoLast || '撤销',
       customInput: currentI18n.operations?.customInput || '对话',
       custom1: currentI18n.customButtons?.custom1 || '自定义 1',
       custom2: currentI18n.customButtons?.custom2 || '自定义 2',
-      custom3: currentI18n.customButtons?.custom3 || '自定义 3'
+      custom3: currentI18n.customButtons?.custom3 || '自定义 3',
+      custom4: currentI18n.customButtons?.custom4 || '自定义 4',
+      custom5: currentI18n.customButtons?.custom5 || '自定义 5',
+      regenerate: currentI18n.history?.regenerate || '重新生成',
+      switchModel: currentI18n.history?.switchModel || '切换模型',
+      directEdit: currentI18n.history?.directEdit || '直接编辑',
+      rollback: currentI18n.history?.rollbackLabel || '版本回退'
     };
     
     if (op.startsWith('custom') && customBtns[op]) {
@@ -192,7 +202,10 @@
   <!-- Header -->
   <div class="diff-header">
     <div class="diff-title">
-      <span>📊 {operationName}</span>
+        {#if comparisonTitle}
+          <span class="comparison-title-notice" style="color: var(--b3-theme-error, #d23f31); margin-right: 8px; font-weight: 600;">{comparisonTitle}</span>
+        {/if}
+        <span>📊 {operationName}</span>
       
       <!-- 模型选择器 -->
       <div class="model-selector">
@@ -301,7 +314,7 @@
     <!-- 原文栏 -->
     <div class="diff-panel original">
       <div class="panel-header">
-        <span>📝 {i18n.diff?.original || '原文'}</span>
+        <span>{leftTitle ? leftTitle : '📝 ' + (i18n.diff?.original || '原文')}</span>
       </div>
       <div class="panel-content">
         <div class="text-content">
@@ -315,7 +328,7 @@
     <!-- 修改后栏 -->
     <div class="diff-panel modified" class:editing={isEditing}>
       <div class="panel-header">
-        <span>✨ {isEditing ? (i18n.diff?.modifiedEditing || '修改后（编辑模式）') : (i18n.diff?.modified || '修改后')}</span>
+        <span>{rightTitle ? rightTitle : '✨ ' + (isEditing ? (i18n.diff?.modifiedEditing || '修改后（编辑模式）') : (i18n.diff?.modified || '修改后'))}</span>
       </div>
       <div class="panel-content">
         {#if isLoading}

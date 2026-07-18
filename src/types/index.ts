@@ -51,22 +51,25 @@ export interface IAIProviderAdapter {
 // ==================== Operation Types ====================
 
 export type AIOperationType =
-    | 'chat'
-    | 'polish'
-    | 'translate'
-    | 'summarize'
-    | 'expand'
-    | 'condense'
-    | 'rewrite'
-    | 'continue'
-    | 'custom1'
-    | 'custom2'
-    | 'custom3'
-    | 'customInput'
-    | 'regenerate'
-    | 'switchModel'
-    | 'directEdit'
-    | 'rollback';
+  | 'chat'
+  | 'polish'
+  | 'translate'
+  | 'summarize'
+  | 'expand'
+  | 'condense'
+  | 'rewrite'
+  | 'continue'
+  | 'undoLast'
+  | 'custom1'
+  | 'custom2'
+  | 'custom3'
+  | 'custom4'
+  | 'custom5'
+  | 'customInput'
+  | 'regenerate'
+  | 'switchModel'
+  | 'directEdit'
+  | 'rollback';
 
 export interface OperationPrompt {
     type: AIOperationType;
@@ -85,9 +88,12 @@ export interface ToolbarButtonConfig {
     condense: boolean;
     rewrite: boolean;
     continue: boolean;
+    undoLast: boolean;
     custom1: boolean;
     custom2: boolean;
     custom3: boolean;
+    custom4: boolean;
+    custom5: boolean;
     customInput: boolean;
 }
 
@@ -289,16 +295,25 @@ export const DEFAULT_PROMPTS: Record<AIOperationType, string> = {
     condense: '请精简以下文本。严格规则：1.去除冗余描述和重复信息；2.保留核心观点和关键数据；3.只输出精简后的内容；4.不要添加任何解释或额外内容：',
     rewrite: '请改写以下文本。严格规则：1.调整为正式书面语风格，适用于学术或商务场景；2.保持原意；3.只输出改写后的内容；4.不要添加任何解释或额外内容：',
     continue: '请延续以下文本续写后续内容。严格规则：1.保持风格和主题一致；2.逻辑连贯；3.只输出续写内容；4.不要添加任何解释或额外内容：',
+    undoLast: '',
     custom1: '',
     custom2: '',
     custom3: '',
-    customInput: ''
+    custom4: '',
+    custom5: '',
+    customInput: '',
+    regenerate: '',
+    switchModel: '',
+    directEdit: '',
+    rollback: ''
 };
 
 export const DEFAULT_CUSTOM_BUTTONS: CustomButton[] = [
     { id: 'custom1', name: '自定义1', icon: '✨', prompt: '', enabled: false },
     { id: 'custom2', name: '自定义2', icon: '🔧', prompt: '', enabled: false },
-    { id: 'custom3', name: '自定义3', icon: '🎯', prompt: '', enabled: false }
+    { id: 'custom3', name: '自定义3', icon: '🎯', prompt: '', enabled: false },
+    { id: 'custom4', name: '自定义4', icon: '📌', prompt: '', enabled: false },
+    { id: 'custom5', name: '自定义5', icon: '⭐', prompt: '', enabled: false }
 ];
 
 export const DEFAULT_TOOLBAR_BUTTONS: ToolbarButtonConfig = {
@@ -309,8 +324,11 @@ export const DEFAULT_TOOLBAR_BUTTONS: ToolbarButtonConfig = {
     condense: false,
     rewrite: false,
     continue: false,
+    undoLast: true,
     custom1: false,
     custom2: false,
     custom3: false,
+    custom4: false,
+    custom5: false,
     customInput: true
 };

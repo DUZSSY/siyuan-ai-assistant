@@ -23,6 +23,10 @@ export interface OperationHistory {
   id: string;                   // 唯一标识
   title: string;                // 标题（原文前30字）
   blockId: string;              // 关联的块ID
+
+  // 撤销快照（用于精确回退）
+  originalFullBlockText?: string; // AI 处理前的完整块快照
+  appliedFullBlockText?: string;  // AI 应用后的完整块快照
   
   // 版本链（智能采样）
   // 策略：总版本<=6时全保存；>6时保存[0,1,2] + [倒数第2,倒数第1,最后]
@@ -51,19 +55,6 @@ export interface OperationHistoryStore {
 // 当前存储格式版本
 export const HISTORY_STORE_VERSION = 1;
 
-// 历史记录导出格式版本
-export const HISTORY_EXPORT_VERSION = 1;
-
 // 存储限制常量
-export const MAX_HISTORY_COUNT = 1000; // 最多1000条历史记录
+export const MAX_HISTORY_COUNT = 1000;     // 最多1000条历史记录
 export const MAX_VERSIONS_PER_HISTORY = 6; // 每条历史最多6个版本
-
-/**
- * 历史记录导出数据格式
- * 用于导入导出功能
- */
-export interface HistoryExportData {
-  version: number; // 导出格式版本
-  exportDate: string; // 导出时间 ISO格式
-  histories: OperationHistory[]; // 历史记录列表
-}

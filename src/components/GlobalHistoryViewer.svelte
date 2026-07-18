@@ -11,6 +11,7 @@
   // Event dispatcher
   const dispatch = createEventDispatcher<{
     close: void;
+    'undo-applied': string;
   }>();
 
   // State
@@ -46,8 +47,11 @@
     isLoading = false;
   }
 
-  function getLocale(): string {
-    return i18n.meta?.languageName === 'English' ? 'en-US' : 'zh-CN';
+  // 外部可调用的刷新方法
+  export async function refreshHistories(): Promise<void> {
+    await loadHistories();
+    // 如果当前选择了某条历史，取消选择使其回到列表视图
+    selectedHistory = null;
   }
 
   // 获取操作名称
@@ -67,6 +71,8 @@
       custom1: i18n.customButtons?.custom1 || '自定义1',
       custom2: i18n.customButtons?.custom2 || '自定义2',
       custom3: i18n.customButtons?.custom3 || '自定义3',
+      custom4: i18n.customButtons?.custom4 || '自定义4',
+      custom5: i18n.customButtons?.custom5 || '自定义5',
       regenerate: i18n.history?.regenerate || '重新生成',
       switchModel: i18n.history?.switchModel || '切换模型',
       directEdit: i18n.history?.directEdit || '直接编辑',
@@ -78,7 +84,7 @@
   // 格式化时间
   function formatDateTime(timestamp: number): string {
     const date = new Date(timestamp);
-    return date.toLocaleString(getLocale(), { 
+    return date.toLocaleString('zh-CN', { 
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -117,6 +123,12 @@
     }
   }
 
+  // 撤销已应用的历史记录
+  function undoAppliedHistory(historyId: string, event: Event) {
+    event.stopPropagation();
+    dispatch('undo-applied', historyId);
+  }
+
   // 清空所有历史
   async function clearAllHistories() {
     if (confirm(i18n.history?.clearAllConfirm || '确定要清空所有历史记录吗？此操作不可恢复。')) {
@@ -143,11 +155,11 @@
     let removed = 0;
     
     diffResult.modified.segments.forEach((seg: any) => {
-      if (seg.type === 'added') added += seg.text.length;
+      if (seg.type === 'insert') added += seg.text.length;
     });
     
     diffResult.original.segments.forEach((seg: any) => {
-      if (seg.type === 'removed') removed += seg.text.length;
+      if (seg.type === 'delete') removed += seg.text.length;
     });
     
     return { added, removed };
@@ -192,6 +204,13 @@
             <span class="history-title-text">{selectedHistory.title}</span>
             {#if selectedHistory.finalApplied}
               <span class="applied-badge" title={i18n.history?.applied || '已应用'}>✓ {i18n.history?.applied || '已应用'}</span>
+              <button
+                class="btn-undo-applied"
+                on:click={(e) => undoAppliedHistory(selectedHistory.id, e)}
+                title={i18n.history?.undoApplied || '撤销应用'}
+              >
+                ↩️ {i18n.history?.undoApplied || '撤销应用'}
+              </button>
             {/if}
           </div>
           
@@ -334,6 +353,15 @@
                   </div>
                 </div>
                 <div class="item-actions">
+                  {#if history.finalApplied}
+                    <button 
+                      class="btn-undo" 
+                      on:click={(e) => undoAppliedHistory(history.id, e)}
+                      title={i18n.history?.undoApplied || '撤销应用'}
+                    >
+                      ↩️
+                    </button>
+                  {/if}
                   <button 
                     class="btn-delete" 
                     on:click={(e) => deleteHistory(history.id, e)}
@@ -561,7 +589,7 @@
       align-items: center;
       gap: 8px;
 
-      .btn-delete {
+      .btn-undo, .btn-delete {
         background: none;
         border: none;
         cursor: pointer;
@@ -572,6 +600,11 @@
         &:hover {
           opacity: 1;
         }
+      }
+
+      .btn-undo:hover {
+        background: var(--b3-theme-primary-light, rgba(66, 133, 244, 0.1));
+        border-radius: 4px;
       }
 
       .item-arrow {
@@ -634,6 +667,21 @@
         display: flex;
         align-items: center;
         gap: 4px;
+      }
+
+      .btn-undo-applied {
+        margin-left: auto;
+        background: var(--b3-theme-primary-light, rgba(66, 133, 244, 0.1));
+        border: 1px solid var(--b3-border-color, #e0e0e0);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--b3-theme-primary, #4285f4);
+
+        &:hover {
+          background: var(--b3-theme-primary-light, rgba(66, 133, 244, 0.18));
+        }
       }
     }
 
@@ -803,12 +851,12 @@
           word-wrap: break-word;
 
           .diff-segment {
-            &.added {
+            &.insert {
               background-color: var(--b3-theme-success-light, rgba(34, 197, 94, 0.15));
               border-bottom: 2px solid var(--b3-theme-success, #22c55e);
               color: var(--b3-theme-on-background);
             }
-            &.removed {
+            &.delete {
               background-color: var(--b3-theme-error-light, rgba(239, 68, 68, 0.15));
               text-decoration: line-through;
               color: var(--b3-theme-on-surface, #999);

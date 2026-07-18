@@ -11,6 +11,7 @@ import GlobalHistoryViewer from './GlobalHistoryViewer.svelte';
   // Props
   export let onClose: () => void = () => {};
   export let onProviderChange: () => void = () => {};
+  export let onUndoApplied: (historyId: string) => Promise<boolean> = async () => false;
   export let i18n: Record<string, any> = {};
 
   // State
@@ -25,9 +26,12 @@ import GlobalHistoryViewer from './GlobalHistoryViewer.svelte';
     condense: false,
     rewrite: false,
     continue: false,
+    undoLast: true,
     custom1: false,
     custom2: false,
     custom3: false,
+    custom4: false,
+    custom5: false,
     customInput: true
   };
 
@@ -341,9 +345,12 @@ async function saveCustomButtons() {
       condense: importedToolbar?.condense ?? currentToolbar.condense,
       rewrite: importedToolbar?.rewrite ?? currentToolbar.rewrite,
       continue: importedToolbar?.continue ?? currentToolbar.continue,
+      undoLast: importedToolbar?.undoLast ?? currentToolbar.undoLast,
       custom1: importedToolbar?.custom1 ?? currentToolbar.custom1,
       custom2: importedToolbar?.custom2 ?? currentToolbar.custom2,
       custom3: importedToolbar?.custom3 ?? currentToolbar.custom3,
+      custom4: importedToolbar?.custom4 ?? currentToolbar.custom4,
+      custom5: importedToolbar?.custom5 ?? currentToolbar.custom5,
       // 兼容旧版导出：旧配置可能不存在 customInput 键
       customInput: importedToolbar?.customInput ?? currentToolbar.customInput
     };
@@ -487,7 +494,7 @@ async function saveCustomButtons() {
     const n2 = normalizeToolbarButtons(t2, toolbarButtons);
     const keys: (keyof ToolbarButtonConfig)[] = [
       'polish', 'translate', 'summarize', 'expand', 'condense', 'rewrite', 'continue',
-      'custom1', 'custom2', 'custom3', 'customInput'
+      'undoLast', 'custom1', 'custom2', 'custom3', 'custom4', 'custom5', 'customInput'
     ];
     return keys.every(key => n1[key] === n2[key]);
   }
@@ -832,7 +839,16 @@ async function saveCustomButtons() {
     globalHistoryViewer.$on('close', () => {
       globalHistoryDialog?.destroy();
     });
-    
+
+      globalHistoryViewer.$on('undo-applied', async (event: CustomEvent<string>) => {
+        const historyId = event.detail;
+        const success = await onUndoApplied(historyId);
+        if (success) {
+          // 撤销成功后，刷新历史列表以更新 finalApplied 状态
+          globalHistoryViewer?.refreshHistories();
+        }
+      });
+
     globalHistoryDialog = showDialog({
       title: i18n.settingsPanel?.history?.globalTitle || i18n.history?.globalHistoryTitle || 'Operation History',
       content: container,
@@ -844,6 +860,7 @@ async function saveCustomButtons() {
         globalHistoryDialog = null;
       }
     });
+
   }
 </script>
 
@@ -1152,6 +1169,14 @@ async function saveCustomButtons() {
           <label class="checkbox-item">
             <input type="checkbox" bind:checked={toolbarButtons.custom3} on:change={() => saveToolbarButtons()} />
             <span>{customButtons[2]?.name || i18n.operations?.custom3 || 'Custom 3'} {customButtons[2]?.icon || '🎯'}</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" bind:checked={toolbarButtons.custom4} on:change={() => saveToolbarButtons()} />
+            <span>{customButtons[3]?.name || i18n.operations?.custom4 || 'Custom 4'} {customButtons[3]?.icon || '📌'}</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" bind:checked={toolbarButtons.custom5} on:change={() => saveToolbarButtons()} />
+            <span>{customButtons[4]?.name || i18n.operations?.custom5 || 'Custom 5'} {customButtons[4]?.icon || '⭐'}</span>
           </label>
         </div>
 

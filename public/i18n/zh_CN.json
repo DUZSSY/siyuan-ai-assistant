@@ -3,7 +3,7 @@
   "meta": {
     "languageName": "简体中文"
   },
-"loading": "加载中...",
+  "loading": "加载中...",
   "send": "发送",
   "cancel": "取消",
   "save": "保存",
@@ -23,7 +23,9 @@
   "customButtons": {
     "custom1": "自定义1",
     "custom2": "自定义2",
-    "custom3": "自定义3"
+    "custom3": "自定义3",
+    "custom4": "自定义4",
+    "custom5": "自定义5"
   },
   "customInput": {
     "title": "💬 对话",
@@ -99,24 +101,25 @@
       "reasoningDesc": "关闭后，插件将不显示思考过程，并会对支持的提供商尽量请求关闭思考模式。",
       "streamSaved": "流式输出设置已保存"
     },
-    "history": {
-      "globalTitle": "全局操作历史",
-      "deleteConfirm": "确定要删除这条历史记录吗？",
-      "clearAllConfirm": "确定要清空所有历史记录吗？此操作不可恢复。",
-      "original": "原文",
-      "final": "最终",
-      "regenerate": "重新生成",
-      "switchModel": "切换模型",
-      "model": "AI模型",
-      "instruction": "AI指令",
-      "viewHistory": "历史版本",
-      "versions": "个版本",
-      "apply": "使用此版本",
-      "compare": "同原文对比"
-    },
+  "history": {
+    "globalTitle": "全局操作历史",
+    "deleteConfirm": "确定要删除这条历史记录吗？",
+    "clearAllConfirm": "确定要清空所有历史记录吗？此操作不可恢复。",
+    "original": "原文",
+    "final": "最终",
+    "regenerate": "重新生成",
+    "switchModel": "切换模型",
+    "model": "AI模型",
+    "instruction": "AI指令",
+    "viewHistory": "历史版本",
+    "versions": "个版本",
+    "apply": "使用此版本",
+    "compare": "同原文对比",
+    "undoLastApplied": "撤销上一次操作"
+  },
     "prompts": {
       "title": "自定义按钮配置",
-      "desc": "配置三个自定义操作按钮（启用后会自动同步到工具栏）",
+      "desc": "配置五个自定义操作按钮（启用后会自动同步到工具栏）",
       "button": "自定义按钮",
       "buttonNumber": "自定义按钮 {n}",
       "enable": "启用此按钮",
@@ -190,6 +193,7 @@
     "condense": "精简",
     "rewrite": "改写",
     "continue": "续写",
+    "undoLast": "撤销",
     "customInput": "对话",
     "custom1": "自定义1",
     "custom2": "自定义2",
@@ -218,7 +222,9 @@
     "regenerateFailed": "重新生成失败，请重试",
     "regenerateError": "重新生成时出错，请检查AI提供商配置",
     "switchModelFailed": "使用新模型处理失败，请重试",
-    "switchModelError": "切换模型失败"
+    "switchModelError": "切换模型失败",
+    "noUndoHistory": "没有可撤销的操作",
+    "noButtonsEnabled": "没有可用的操作按钮，请先在设置中启用"
   },
   "diff": {
     "title": "差异对比",
@@ -336,6 +342,34 @@
     "readonly": "只读查看",
     "skipped": "省略",
     "someVersionsSkipped": "部分版本已省略",
-    "close": "关闭"
+    "close": "关闭",
+    "legacyHistoryCannotRollback": "这是旧版本的历史记录，无法执行精确撤销。",
+    "blockNotFound": "原始文本块已不存在。",
+    "rollbackDirtyWarning": "⚠️ 警告：撤销覆盖确认（文本已被修改）",
+    "rollbackCurrentState": "已被修改的现状（将被清除）",
+    "rollbackCurrentStateNormal": "当前状态（将被清除）",
+    "rollbackOriginalState": "将被恢复成的原文快照",
+    "confirmRollback": "强行覆盖并撤销",
+    "confirmRollbackNormal": "确认撤销并恢复为快照",
+    "rollbackConfirmTitle": "确认执行撤销",
+    "operationFailed": "操作失败",
+    "undoApplied": "撤销应用还原快照",
+    "historyNotFound": "抱歉，未找到此记录或此记录尚未应用。",
+    "applyFailed": "应用修改失败，请重试",
+    "unknownBlock": "无法确定要更新的文本块",
+    "modelError": "模型处理失败，请重试或更换模型",
+    "error": "处理失败",
+    "applyFailedSelection": "应用失败：无法在原文中找到选中的文字",
+    "noProvider": "请先配置AI提供商",
+    "blockContentEmpty": "块内容为空，无法处理",
+    "networkError": "网络错误，请检查网络连接",
+    "authError": "API密钥无效或已过期，请检查配置",
+    "rateLimitError": "请求过于频繁，请稍后再试",
+    "providerError": "AI提供商返回错误，请检查配置或稍后重试",
+    "regenerateFailed": "重新生成失败，请重试",
+    "regenerateError": "重新生成时出错，请检查AI提供商配置",
+    "switchModelFailed": "使用新模型处理失败，请重试",
+    "switchModelError": "切换模型失败",
+    "processing": "处理中..."
   }
 }

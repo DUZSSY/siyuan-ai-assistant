@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.21] - TBD
+
+### ✨ Added / 新增
+- ↩️ **快照回退与快捷撤销** — 浮动工具栏和右键菜单新增「撤销上一次操作」，支持历史记录一键恢复原始快照
+- **Snapshot Rollback & Quick Undo** — New undo button in toolbar and context menu, one-click snapshot restore from history
+- 🎛️ **自定义按钮从3个扩展到5个** — 支持配置 custom4、custom5 两个新增自定义按钮
+- **Custom Buttons Expanded: 3→5** — Two new custom buttons (custom4, custom5) available for configuration
+
+### 🔧 Improved / 优化
+- 🐛 修复了若干发现的问题
+- **Various bug fixes**
+
 ## [0.1.19] - 2026-03-16
 
 ### ✨ Added / 新增

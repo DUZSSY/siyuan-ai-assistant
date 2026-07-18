@@ -206,34 +206,40 @@ export default class AIAssistantPlugin extends Plugin {
     }
 
     private initFloatingToolbar() {
-        this.floatingToolbar = new FloatingToolbar({
-            onOperation: (type, original, modified, blockId, selectedText, selectionStart, selectionEnd) => {
-                // selectedText 是原始选中的文字（用于精确替换）
-                // original 是完整块内容（用于显示差异）
-                // selectionStart/selectionEnd 是选中文字在原文中的精确索引
-                this.updateDiffViewer(modified, original, selectedText, selectionStart, selectionEnd);
-                // 操作完成后隐藏浮动工具栏
-                this.floatingToolbar?.forceHide();
-            },
-            onOperationStart: async (type, original, blockId, selectedText, selectionStart, selectionEnd) => {
-                const runToken = ++this.operationRunToken;
-                // 0. 重置当前历史ID
-                this.currentHistoryId = null;
+    this.floatingToolbar = new FloatingToolbar({
+      onOperation: (type, original, modified, blockId, selectedText, selectionStart, selectionEnd) => {
+        // selectedText 是原始选中的文字（用于精确替换）
+        // original 是完整块内容（用于显示差异）
+        // selectionStart/selectionEnd 是选中文字在原文中的精确索引
+        this.updateDiffViewer(modified, original, selectedText, selectionStart, selectionEnd);
+        // 操作完成后隐藏浮动工具栏
+        this.floatingToolbar?.forceHide();
+      },
+      onOperationStart: async (type, original, blockId, selectedText, selectionStart, selectionEnd) => {
+        // 处理撤销操作
+        if (type === 'undoLast') {
+          await this.handleUndoLastOperation(blockId);
+          return;
+        }
 
-                const settings = settingsService.getSettings();
-                const customBtn = settings.customButtons.find((b: any) => b.id === type);
-                const prompt = customBtn?.prompt;
+        const runToken = ++this.operationRunToken;
+        // 0. 重置当前历史ID
+        this.currentHistoryId = null;
 
-                // 固定本次会话的初始上下文（用于重新生成）
-                if (type.startsWith('custom')) {
-                    this.currentInitialPrompt = prompt || '';
-                } else {
-                    this.currentInitialPrompt = settings.operationPrompts?.[type] || DEFAULT_PROMPTS[type] || '';
-                }
-                this.currentInitialOriginalText = selectedText || original;
+        const settings = settingsService.getSettings();
+        const customBtn = settings.customButtons.find((b: any) => b.id === type);
+        const prompt = customBtn?.prompt;
+
+        // 固定本次会话的初始上下文（用于重新生成）
+        if (type.startsWith('custom')) {
+          this.currentInitialPrompt = prompt || '';
+        } else {
+          this.currentInitialPrompt = settings.operationPrompts?.[type] || DEFAULT_PROMPTS[type] || '';
+        }
+        this.currentInitialOriginalText = selectedText || original;
 
                 // 1. 显示加载中
-                this.showDiffViewer(original, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), type, blockId, selectedText, selectionStart, selectionEnd);
+                this.showDiffViewer(original, '⏳ ' + (this.i18n.history.processing), type, blockId, selectedText, selectionStart, selectionEnd);
                 const sessionId = this.currentDiffSessionId;
                 // 开始操作时隐藏浮动工具栏
                 this.floatingToolbar?.forceHide();
@@ -250,7 +256,8 @@ export default class AIAssistantPlugin extends Plugin {
                                 providerId: aiService.getCurrentProvider()?.id,
                                 model: aiService.getCurrentProvider()?.model,
                                 instruction: customBtn?.name // 记录按钮名称作为初次指令内容
-                            }
+                            },
+                            original // 原文全量块内容快照保护
                         );
                         if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
                             return;
@@ -306,7 +313,7 @@ export default class AIAssistantPlugin extends Plugin {
                     this.updateDiffViewer(response.content, original, selectedText, selectionStart, selectionEnd, sessionId);
                 } else {
                     this.currentDiffViewer?.$set({ isLoading: false });
-                    alert(this.i18n?.messages?.modelError || '模型处理失败，请重试或更换模型');
+                    alert(this.i18n.history.modelError);
                 }
             } catch (error) {
                 if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
@@ -318,23 +325,27 @@ export default class AIAssistantPlugin extends Plugin {
                     console.error('[AI Assistant] Operation error:', error);
                 }
 
-                alert(this.i18n?.messages?.error || '处理失败');
+                alert(this.i18n.history.error);
                 this.currentDiffViewer?.$set({ isLoading: false });
             }
         },
-            onCustomInput: (selectedText, originalText, blockId, selectionStart, selectionEnd) => {
-                // 显示自定义输入对话框
-                this.showCustomInputDialog(selectedText, originalText, blockId, selectionStart, selectionEnd);
-                // 隐藏浮动工具栏
-                this.floatingToolbar?.forceHide();
-            },
-            onOpenSettings: () => this.openSettings(),
-            onModelChange: async (type, original, blockId, selectedText, selectionStart, selectionEnd) => {
-                // 模型切换后重新执行上一操作
-                await this.handleModelChangeOperation(type, original, blockId, selectedText, selectionStart, selectionEnd);
-            },
-            i18n: this.i18n
-        });
+      onCustomInput: (selectedText, originalText, blockId, selectionStart, selectionEnd) => {
+        // 显示自定义输入对话框
+        this.showCustomInputDialog(selectedText, originalText, blockId, selectionStart, selectionEnd);
+        // 隐藏浮动工具栏
+        this.floatingToolbar?.forceHide();
+      },
+      onOpenSettings: () => this.openSettings(),
+      onModelChange: async (type, original, blockId, selectedText, selectionStart, selectionEnd) => {
+        // 模型切换后重新执行上一操作
+        await this.handleModelChangeOperation(type, original, blockId, selectedText, selectionStart, selectionEnd);
+      },
+      onUndo: async () => {
+        const blockId = this.floatingToolbar?.getCurrentBlockId();
+        return await this.handleUndoLastOperation(blockId);
+      },
+      i18n: this.i18n
+    });
     }
 
     // 处理模型切换后的重新操作
@@ -348,7 +359,7 @@ export default class AIAssistantPlugin extends Plugin {
     ): Promise<void> {
         const runToken = ++this.operationRunToken;
         // 显示处理中状态
-        this.showDiffViewer(original, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), type, blockId, selectedText, selectionStart, selectionEnd);
+        this.showDiffViewer(original, '⏳ ' + (this.i18n.history.processing), type, blockId, selectedText, selectionStart, selectionEnd);
         const sessionId = this.currentDiffSessionId;
 
         try {
@@ -412,7 +423,7 @@ export default class AIAssistantPlugin extends Plugin {
                 if (!errorStr.includes('ERR_PROXY_CONNECTION_FAILED') && !errorStr.includes('Failed to fetch')) {
                     console.error('[AI Assistant] Model change operation error:', error);
                 }
-                alert(this.i18n?.messages?.error || '处理失败');
+                alert(this.i18n.history.error);
             }
         }
 
@@ -583,16 +594,22 @@ export default class AIAssistantPlugin extends Plugin {
     private initContextMenu() {
         this.contextMenuManager = new ContextMenuManager({
             onOperation: async (type, blockId, blockContentFromDOM) => {
+                // 处理右键菜单的“撤销上一次操作”
+                if (type === 'undoLast') {
+                    await this.handleUndoLastOperation(blockId);
+                    return;
+                }
+
                 const runToken = ++this.operationRunToken;
                 // 确保 AI 提供商已配置
                 if (!await this.ensureProviderConfigured()) {
-                    alert(this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
+                    alert(this.i18n.history.noProvider);
                     this.openSettings();
                     return;
                 }
 
                 if (!blockId) {
-                    alert(this.i18n?.messages?.blockContentEmpty || '无法获取块ID');
+                    alert(this.i18n.history.blockContentEmpty);
                     return;
                 }
 
@@ -612,13 +629,13 @@ export default class AIAssistantPlugin extends Plugin {
                     }
                     
                     if (!blockContent || blockContent.trim().length === 0) {
-                        alert(this.i18n?.messages?.blockContentEmpty || '块内容为空');
+                        alert(this.i18n.history.blockContentEmpty);
                         return;
                     }
 
                     // 获取自定义按钮的 prompt
                     const settings = settingsService.getSettings();
-                    // 从 type (custom1, custom2, custom3) 提取索引获取对应按钮
+                    // 从 type (custom1~custom5) 提取索引获取对应按钮
                     let customPrompt: string | undefined;
                     if (type.startsWith('custom')) {
                         const customIndex = parseInt(type.replace('custom', '')) - 1;
@@ -628,7 +645,7 @@ export default class AIAssistantPlugin extends Plugin {
                     }
                     
                     // 先显示 Diff 窗口，显示"正在处理"状态
-                    this.showDiffViewer(blockContent, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), type, blockId, '', -1, -1, true);
+                    this.showDiffViewer(blockContent, '⏳ ' + (this.i18n.history.processing), type, blockId, '', -1, -1, true);
                     const sessionId = this.currentDiffSessionId;
 
                     // 固定会话上下文
@@ -650,7 +667,8 @@ export default class AIAssistantPlugin extends Plugin {
                             {
                                 providerId: aiService.getCurrentProvider()?.id,
                                 model: aiService.getCurrentProvider()?.model
-                            }
+                            },
+                            blockContent // 全量块内容快照保护
                         );
                         if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
                             return;
@@ -699,13 +717,13 @@ export default class AIAssistantPlugin extends Plugin {
                         this.updateDiffViewer(response.content, undefined, undefined, undefined, undefined, sessionId);
                     } else {
                         this.currentDiffViewer?.$set({ isLoading: false });
-                        alert(this.i18n?.messages?.modelError || '模型处理失败，请重试或更换模型');
+                        alert(this.i18n.history.modelError);
                     }
                 } catch (error) {
                     if (runToken !== this.operationRunToken) {
                         return;
                     }
-                    let errorMsg = this.i18n?.messages?.error || '处理失败';
+                    let errorMsg = this.i18n.history.error;
                     
                     if (error instanceof Error) {
                         const errorText = error.message.toLowerCase();
@@ -717,31 +735,31 @@ export default class AIAssistantPlugin extends Plugin {
                         }
                         // 网络错误
                         else if (errorText.includes('network') || errorText.includes('fetch') || errorText.includes('enetunreach') || errorText.includes('econnrefused')) {
-                            errorMsg = this.i18n?.messages?.networkError || '网络错误，请检查网络连接';
+                            errorMsg = this.i18n.history.networkError;
                         }
                         // 未配置
                         else if (errorText.includes('not configured')) {
-                            errorMsg = this.i18n?.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置';
+                            errorMsg = this.i18n.history.noProvider;
                         }
                         // 认证错误
                         else if (errorText.includes('auth') || errorText.includes('api key') || errorText.includes('unauthorized') || errorText.includes('401')) {
-                            errorMsg = this.i18n?.messages?.authError || 'API密钥无效或已过期，请检查配置';
+                            errorMsg = this.i18n.history.authError;
                         }
                         // 频率限制
                         else if (errorText.includes('rate limit') || errorText.includes('too many') || errorText.includes('429')) {
-                            errorMsg = this.i18n?.messages?.rateLimitError || '请求过于频繁，请稍后再试';
+                            errorMsg = this.i18n.history.rateLimitError;
                         }
                         // AI提供商错误
                         else if (errorText.includes('500') || errorText.includes('502') || errorText.includes('503') || errorText.includes('bad gateway') || errorText.includes('service unavailable')) {
-                            errorMsg = this.i18n?.messages?.providerError || 'AI提供商服务异常，请稍后重试';
+                            errorMsg = this.i18n.history.providerError;
                         }
                         // 模型错误
                         else if (errorText.includes('model') || errorText.includes('invalid model') || errorText.includes('model not found')) {
-                            errorMsg = this.i18n?.messages?.modelError || '模型处理失败，请重试或更换模型';
+                            errorMsg = this.i18n.history.modelError;
                         }
                         // 其他错误
                         else {
-                            errorMsg = `${this.i18n?.messages?.error || '处理失败'}：${error.message}`;
+                            errorMsg = `${this.i18n.history.error}：${error.message}`;
                         }
                     }
                     
@@ -796,6 +814,7 @@ export default class AIAssistantPlugin extends Plugin {
                     // 异步静默检查模型可用性
                     this.checkModelReliabilitySilently();
                 },
+                onUndoApplied: (historyId: string) => this.rollbackAppliedHistory(historyId),
                 i18n: this.i18n
             }
         });
@@ -814,8 +833,124 @@ export default class AIAssistantPlugin extends Plugin {
     }
 
     /**
-     * 显示历史版本对话框
+     * 撤销已应用的历史记录（恢复原文块）
      */
+    public async rollbackAppliedHistory(historyId: string): Promise<boolean> {
+        try {
+            const history = await historyService.getHistory(historyId);
+            if (!history || !history.finalApplied) {
+                alert(this.i18n.history.historyNotFound);
+                return false;
+            }
+
+            if (!history.originalFullBlockText) {
+                alert(this.i18n.history.legacyHistoryCannotRollback);
+                return false;
+            }
+
+            const currentBlockInfo = await blockService.getBlockContent(history.blockId);
+            const domText = blockService.getBlockContentFromDOM(history.blockId);
+            
+            if (!currentBlockInfo && !domText) {
+                alert(this.i18n.history.blockNotFound);
+                return false;
+            }
+
+            let bestCurrentText = '';
+            // 优先使用 API 返回的 markdown（与 updateBlock 写入格式一致）
+            if (currentBlockInfo && currentBlockInfo.markdown && currentBlockInfo.markdown.trim().length > 0) {
+                bestCurrentText = currentBlockInfo.markdown;
+            } else if (currentBlockInfo && currentBlockInfo.content && currentBlockInfo.content.trim().length > 0) {
+                bestCurrentText = currentBlockInfo.content;
+            } else if (domText && domText.trim().length > 0) {
+                bestCurrentText = domText;
+            } else if (history.appliedFullBlockText && history.appliedFullBlockText.trim().length > 0) {
+                // 使用应用时的快照作为最终兜底
+                bestCurrentText = history.appliedFullBlockText;
+            }
+
+const isDirty = history.appliedFullBlockText && bestCurrentText !== history.appliedFullBlockText && bestCurrentText.trim() !== history.appliedFullBlockText.trim();
+
+            return new Promise((resolve) => {
+                const container = document.createElement('div');
+                container.style.height = '100%';
+                
+                const viewer = new DiffViewer({
+                    target: container,
+                    props: {
+                        original: bestCurrentText,
+                        modified: history.originalFullBlockText,
+                        i18n: this.i18n
+                    }
+                });
+
+                viewer.$set({
+                    isStreaming: false,
+                    comparisonTitle: isDirty ? (this.i18n.history.rollbackDirtyWarning || '⚠️ 警告：文本已被修改') : (this.i18n.history.confirmRollbackNormal || '确认撤销并恢复为快照'),
+                    leftTitle: isDirty ? (this.i18n.history.rollbackCurrentState || '已被修改的现状（将被清除）') : (this.i18n.history.rollbackCurrentStateNormal || '当前状态（将被清除）'),
+                    rightTitle: this.i18n.history.rollbackOriginalState || '将被恢复成的原文快照'
+                });
+
+                // 临时修改按钮标题为确认撤销
+                setTimeout(() => {
+                    const applyBtn = container.querySelector('.btn-apply') as HTMLElement;
+                    if (applyBtn) {
+                        applyBtn.innerHTML = `✓ ${this.i18n.history.confirmRollback}`;
+                    }
+                }, 50);
+
+                viewer.$on('apply', async (event: CustomEvent<string>) => {
+                    const result = event.detail; // This is the original snapshot
+                    await blockService.updateBlock(history.blockId, result);
+                    dialog.destroy();
+                    resolve(true);
+                });
+
+                viewer.$on('close', () => {
+                    dialog.destroy();
+                    resolve(false);
+                });
+
+                const dialog = showDialog({
+                    title: this.i18n.history.rollbackConfirmTitle || '确认恢复',
+                    content: container,
+                    width: '800px',
+                    height: '600px',
+                    destroyCallback: () => {
+                        viewer.$destroy();
+                    }
+                });
+            });
+    } catch (e) {
+      console.error('[AI Assistant] rollback failed', e);
+      alert(this.i18n.history.applyFailed || this.i18n.messages?.applyFailed || '应用修改失败');
+      return false;
+    }
+  }
+
+  /**
+   * 处理撤销上一次操作
+   */
+  private async handleUndoLastOperation(blockId: string | null | undefined): Promise<boolean> {
+    if (!blockId) {
+      alert(this.i18n.messages?.noUndoHistory || '没有可撤销的操作');
+      return false;
+    }
+
+    // 获取该块最近的历史记录
+    const history = await historyService.getLatestHistoryByBlockId(blockId);
+    if (!history) {
+      alert(this.i18n.messages?.noUndoHistory || '没有可撤销的操作');
+      return false;
+    }
+
+    // 调用 rollbackAppliedHistory 进行撤销
+    return await this.rollbackAppliedHistory(history.id);
+  }
+
+  /**
+   * 显示历史版本对话框
+   */
     private showHistoryDialog(historyId: string) {
         const container = document.createElement('div');
         container.style.height = '100%';
@@ -833,7 +968,7 @@ export default class AIAssistantPlugin extends Plugin {
         });
 
         this.historyDialog = showDialog({
-            title: this.i18n.history?.viewHistory || '历史版本',
+            title: this.i18n.history.viewHistory,
             content: container,
             width: '800px',
             height: '600px',
@@ -853,7 +988,22 @@ export default class AIAssistantPlugin extends Plugin {
             const version = event.detail.version;
             
             try {
-                // 1. 记录回退操作到历史记录 (作为新版本添加，类型为 rollback)
+                // 1. 获取完整历史记录，获取 blockId
+                const fullHistory = await historyService.getHistory(historyId);
+                if (!fullHistory || !fullHistory.blockId) {
+                    console.error('[AI Assistant] rollback failed: history or blockId not found');
+                    alert(this.i18n.history.applyFailed || this.i18n.messages?.applyFailed || '回退失败');
+                    return;
+                }
+
+                // 2. 实际更新块内容
+                const success = await blockService.updateBlock(fullHistory.blockId, version.text);
+                if (!success) {
+                    alert(this.i18n.history.applyFailed || this.i18n.messages?.applyFailed || '回退失败');
+                    return;
+                }
+
+                // 3. 记录回退操作到历史记录 (作为新版本添加，类型为 rollback)
                 await historyService.addVersion(
                     historyId,
                     version.text,
@@ -863,18 +1013,31 @@ export default class AIAssistantPlugin extends Plugin {
                     }
                 );
 
-                // 2. 更新 Diff Viewer
+                // 4. 更新 markAsApplied 状态（不传 originalFullBlockText，保留原始快照）
+                await historyService.markAsApplied(
+                    historyId,
+                    version.text
+                );
+
+                // 5. 更新当前光标状态
+                this.currentOriginalText = version.text;
+                this.currentSelectedText = '';
+                this.currentSelectionStart = -1;
+                this.currentSelectionEnd = -1;
+
+                // 6. 更新 Diff Viewer
                 if (this.currentDiffViewer) {
                     this.currentDiffViewer.$set({
                         modified: version.text
                     });
                 }
 
-                // 3. 关闭对话框
+                // 7. 关闭对话框
                 this.historyDialog?.destroy();
                 
             } catch (error) {
-                // 回退失败，静默处理
+                console.error('[AI Assistant] rollback failed', error);
+                alert(this.i18n.history.applyFailed || this.i18n.messages?.applyFailed || '回退失败');
             }
         });
     }
@@ -921,13 +1084,13 @@ export default class AIAssistantPlugin extends Plugin {
         // 监听查看历史事件
         this.currentDiffViewer.$on('viewHistory', async () => {
             if (!this.currentHistoryId) {
-                alert(this.i18n.history?.noHistory || '暂无历史记录');
+                alert(this.i18n.history.noHistory);
                 return;
             }
             
             const history = await historyService.getHistory(this.currentHistoryId);
             if (!history) {
-                alert(this.i18n.history?.noHistory || '暂无历史记录');
+                alert(this.i18n.history.noHistory);
                 return;
             }
 
@@ -950,7 +1113,7 @@ export default class AIAssistantPlugin extends Plugin {
                 } else {
                     const selectedText = this.currentSelectedText;
                     if (!selectedText || selectedText.length === 0) {
-                        alert(this.i18n?.messages?.selectionContextLost || this.i18n?.messages?.applyFailedSelection || 'Apply failed: selected text context is missing');
+                        alert(this.i18n?.messages?.selectionContextLost || this.i18n.history.applyFailedSelection);
                         this.diffDialog?.destroy();
                         this.diffDialog = null;
                         return;
@@ -1010,13 +1173,13 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                 newContent = newContent.replace(/\n\n+/g, '\n');
                 appliedSelectionStart = this.findBestSelectionIndex(newContent, result, this.currentSelectionStart);
                         } else {
-                            alert(this.i18n?.messages?.applyFailedSelection || 'Apply failed: selected text not found in original');
+                            alert(this.i18n.history.applyFailedSelection);
                             this.diffDialog?.destroy();
                             this.diffDialog = null;
                             return;
                         }
                     } else {
-                        alert(this.i18n?.messages?.applyFailedSelection || 'Apply failed: selected text not found in original');
+                        alert(this.i18n.history.applyFailedSelection);
                         this.diffDialog?.destroy();
                         this.diffDialog = null;
                         return;
@@ -1025,14 +1188,17 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                 
                 // 直接更新块内容
                 if (targetBlockId) {
+                    const originalFullBlockText = this.currentOriginalText;
                     const success = await blockService.updateBlock(targetBlockId, newContent);
                     if (!success) {
-                        alert(this.i18n?.messages?.applyFailed || '应用修改失败，请重试');
+                        alert(this.i18n.history.applyFailed || this.i18n.messages?.applyFailed || '应用修改失败');
                     } else {
-                        // 更新保存的原始文本为最新内容，以便后续重新生成或切换模型时使用
-                        this.currentOriginalText = newContent;
                         if (this.currentHistoryId) {
-                            await historyService.markAsApplied(this.currentHistoryId);
+                            await historyService.markAsApplied(
+                                this.currentHistoryId,
+                                newContent,
+                                originalFullBlockText
+                            );
                         }
                         if (this.isFullBlockReplace) {
                             this.currentSelectedText = '';
@@ -1051,13 +1217,13 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                         }
                     }
                 } else {
-                    alert(this.i18n?.messages?.unknownBlock || '无法确定要更新的文本块');
+                    alert(this.i18n.history.unknownBlock);
                 }
             } else {
                 if (targetBlockId) {
                     const success = await blockService.updateBlock(targetBlockId, result);
                     if (!success) {
-                        alert(this.i18n?.messages?.applyFailed || '应用修改失败，请重试');
+                        alert(this.i18n.history.applyFailed || this.i18n.messages?.applyFailed || '应用修改失败');
                     }
                 }
             }
@@ -1156,11 +1322,11 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                     }
                     this.updateDiffViewer(response.content, undefined, undefined, undefined, undefined, sessionId);
                 } else {
-                    alert(this.i18n?.messages?.regenerateFailed || '重新生成失败，请重试');
+                    alert(this.i18n.history.regenerateFailed);
                     this.updateDiffViewer(currentModified, undefined, undefined, undefined, undefined, sessionId);
                 }
             } catch (error) {
-                alert(this.i18n?.messages?.regenerateError || '重新生成时出错，请检查AI提供商配置');
+                alert(this.i18n.history.regenerateError);
                 this.updateDiffViewer(currentModified, undefined, undefined, undefined, undefined, sessionId);
             } finally {
                 // 关闭加载状态
@@ -1190,7 +1356,7 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                 }
 
                 if (!messagesForRequest || messagesForRequest.length === 0) {
-                    alert(this.i18n?.messages?.switchModelFailed || '使用新模型处理失败，请重试');
+                    alert(this.i18n.history.switchModelFailed);
                     return;
                 }
 
@@ -1227,10 +1393,10 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                     }
                     this.updateDiffViewer(response.content, undefined, undefined, undefined, undefined, sessionId);
                 } else {
-                    alert(this.i18n?.messages?.switchModelFailed || '使用新模型处理失败，请重试');
+                    alert(this.i18n.history.switchModelFailed);
                 }
             } catch (error) {
-                alert(this.i18n?.messages?.switchModelError || '切换模型失败');
+                alert(this.i18n.history.switchModelError);
             } finally {
                 // 关闭加载状态
                 if (runToken === this.operationRunToken && sessionId === this.currentDiffSessionId) {
@@ -1386,7 +1552,7 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
         }
 
         if (this.historyDialog) {
-            updateDialogTitle(this.historyDialog, this.i18n.history?.viewHistory || '历史版本');
+            updateDialogTitle(this.historyDialog, this.i18n.history.viewHistory);
         }
 
         if (this.customInputDialog) {
@@ -1407,10 +1573,12 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
             custom1: this.i18n.operations?.custom1 || 'Custom 1',
             custom2: this.i18n.operations?.custom2 || 'Custom 2',
             custom3: this.i18n.operations?.custom3 || 'Custom 3',
+            custom4: this.i18n.operations?.custom4 || 'Custom 4',
+            custom5: this.i18n.operations?.custom5 || 'Custom 5',
             customInput: this.i18n.operations?.customInput || 'Chat',
             directEdit: this.i18n.diff?.directEdit || 'Direct Edit',
-            rollback: this.i18n.history?.rollback || 'Rollback',
-            original: this.i18n.history?.original || 'Original'
+            rollback: this.i18n.history.rollback,
+            original: this.i18n.history.original
         };
 
         const opStr = op as string;
@@ -1518,7 +1686,7 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
             this.currentInitialOriginalText = selectedText;
 
             // 显示 Diff 窗口（显示"正在处理"状态）
-            this.showDiffViewer(blockContent, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), 'customInput', blockId || undefined, selectedText, selectionStart, selectionEnd);
+            this.showDiffViewer(blockContent, '⏳ ' + (this.i18n.history.processing), 'customInput', blockId || undefined, selectedText, selectionStart, selectionEnd);
             const sessionId = this.currentDiffSessionId;
 
             // 创建历史记录（仅记录当前选中文本范围）
@@ -1533,7 +1701,8 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                         providerId: aiService.getCurrentProvider()?.id,
                         model: aiService.getCurrentProvider()?.model,
                         instruction: customPrompt
-                    }
+                    },
+                    blockContent // 全量块内容快照保护
                 );
                 if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
                     return;
@@ -1583,13 +1752,13 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                     this.updateDiffViewer(response.content, undefined, undefined, undefined, undefined, sessionId);
                 } else {
                     this.currentDiffViewer?.$set({ isLoading: false });
-                    alert(this.i18n?.messages?.modelError || '模型处理失败，请重试或更换模型');
+                    alert(this.i18n.history.modelError);
                 }
             } catch (error) {
                 if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
                     return;
                 }
-                alert(this.i18n?.messages?.error || '处理失败');
+                alert(this.i18n.history.error);
                 this.currentDiffViewer?.$set({ isLoading: false });
             }
         });
@@ -1650,7 +1819,7 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
             this.currentInitialOriginalText = blockContent;
 
             // 显示 Diff 窗口（整块替换模式）
-            this.showDiffViewer(blockContent, '⏳ ' + (this.i18n?.messages?.processing || '正在请求AI处理...'), 'customInput', blockId, '', -1, -1, true);
+            this.showDiffViewer(blockContent, '⏳ ' + (this.i18n.history.processing), 'customInput', blockId, '', -1, -1, true);
             const sessionId = this.currentDiffSessionId;
 
             // 创建历史记录（整块上下文）
@@ -1664,7 +1833,8 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                         providerId: aiService.getCurrentProvider()?.id,
                         model: aiService.getCurrentProvider()?.model,
                         instruction: customPrompt
-                    }
+                    },
+                    blockContent // 全量块快照保护
                 );
                 if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
                     return;
@@ -1717,7 +1887,7 @@ if (replaceStart >= 0 && replaceEnd > replaceStart) {
                 if (runToken !== this.operationRunToken || sessionId !== this.currentDiffSessionId) {
                     return;
                 }
-                alert(this.i18n?.messages?.error || '处理失败');
+                alert(this.i18n.history.error);
             }
         });
 

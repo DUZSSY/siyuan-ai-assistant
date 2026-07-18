@@ -139,6 +139,22 @@ export class BlockService {
     }
 
     /**
+     * Get block content directly from DOM
+     */
+    getBlockContentFromDOM(blockId: string): string | null {
+        const element = document.querySelector(`[data-node-id="${blockId}"]`);
+        if (element) {
+            // 如果是代码块，尝试获取其中的文本
+            const codeBlock = element.querySelector('.b3-typography__code, .protyle-wysiwyg__code');
+            if (codeBlock) {
+                return codeBlock.textContent || element.textContent || '';
+            }
+            return element.textContent || '';
+        }
+        return null;
+    }
+
+    /**
      * Get block content by ID
      */
     async getBlockContent(blockId: string): Promise<BlockInfo | null> {

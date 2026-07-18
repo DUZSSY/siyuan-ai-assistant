@@ -1,55 +1,102 @@
+# ============================================
 # Dependencies
+# ============================================
 node_modules/
 
+# ============================================
 # Build outputs
 dist/
 build/
 
-# IDE
+# ============================================
+# IDE & Editors
+# ============================================
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
+# ============================================
 # OS
+# ============================================
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
+# ============================================
 # Logs
+# ============================================
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
+# ============================================
 # Environment
+# ============================================
 .env
 .env.local
 .env.*.local
 
+# ============================================
 # Backup files
+# ============================================
 *.bak
 *.backup
 
-# Temporary files
+# ============================================
+# Temporary files (glob pattern)
+# ============================================
 temp/
 tmp_check*/
-temp_final/
-temp_check2/
-temp_check3/
-temp_test/
-temp_verify/
+temp_*/
 
+# ============================================
 # Package zips
+# ============================================
 *.zip
 
-# Publish directory (only release package.zip needed)
+# ============================================
+# Publish directory
+# ============================================
 publish/
 
-# Backups
+# ============================================
+# Backups - development snapshots
+# ============================================
 backups/
 
-# Development status docs
+# ============================================
+# Svelte
+# ============================================
+.svelte-kit/
+.svelte-check/
+
+# ============================================
+# TypeScript
+# ============================================
+*.tsbuildinfo
+
+# ============================================
+# Vite
+# ============================================
+vite.config.ts.timestamp-*
+
+# ============================================
+# Development docs (temporary)
+# ============================================
 IMPLEMENTATION_STATUS.md
 FEATURE_SPECIFICATION.md
 RELEASE-v0.1.5.md
 
 # Temp files
 nul
+
+# Dev analysis files
+diff_toolbar.txt
+temp_diff.txt
+diff_viewer.diff
+i18n_diff.txt
+i18n_diff_summary.txt

@@ -22,28 +22,54 @@ export class SettingsService {
         this.plugin = plugin;
     }
 
-async loadSettings(): Promise<void> {
-    if (!this.plugin) return;
+    async loadSettings(): Promise<void> {
+        if (!this.plugin) return;
 
-    try {
-      const data = await this.plugin.loadData(STORAGE_KEY);
-      if (data) {
-        this.settings = { ...this.getDefaultSettings(), ...data };
-      }
-    } catch (error) {
-      console.error('[AI Assistant] Failed to load settings:', error);
+        try {
+            const data = await this.plugin.loadData(STORAGE_KEY);
+            if (data) {
+                const defaultSettings = this.getDefaultSettings();
+                this.settings = { 
+                    ...defaultSettings, 
+                    ...data,
+                    // 合并嵌套对象，保留新增的默认字段
+                    toolbarButtons: {
+                        ...defaultSettings.toolbarButtons,
+                        ...(data.toolbarButtons || {})
+                    },
+                    operationPrompts: {
+                        ...defaultSettings.operationPrompts,
+                        ...(data.operationPrompts || {})
+                    },
+                    // customButtons 深度合并：保留已有按钮，追加新按钮
+                    customButtons: (() => {
+                        const saved = data.customButtons || [];
+                        const defaults = defaultSettings.customButtons;
+                        // 如果已有按钮数量 >= 默认数量，直接使用保存的
+                        if (saved.length >= defaults.length) return saved;
+                        // 追加默认中不存在的按钮
+                        const merged = [...saved];
+                        for (let i = saved.length; i < defaults.length; i++) {
+                            merged.push({ ...defaults[i] });
+                        }
+                        return merged;
+                    })()
+                };
+            }
+        } catch (error) {
+            // 加载设置失败，使用默认设置
+        }
     }
-  }
 
-  async saveSettings(): Promise<void> {
-    if (!this.plugin) return;
+    async saveSettings(): Promise<void> {
+        if (!this.plugin) return;
 
-    try {
-      await this.plugin.saveData(STORAGE_KEY, this.settings);
-    } catch (error) {
-      console.error('[AI Assistant] Failed to save settings:', error);
+        try {
+            await this.plugin.saveData(STORAGE_KEY, this.settings);
+        } catch (error) {
+            // 保存设置失败
+        }
     }
-  }
 
     getSettings(): PluginSettings {
         return { ...this.settings };

@@ -7,13 +7,13 @@
 - 📝 **Block-Level AI Editing**: Select any text block and polish, translate, or summarize with one click
 - 💬 **Direct Chat Dialog**: Chat with AI using natural language for custom text modifications
 - 🌊 **Streaming Response**: Real-time character-by-character display of AI-generated content with reasoning chain support
-- 📜 **Operation History**: Complete record of text processing with version timeline and diff comparison
-- 🤖 **Multi-AI Provider Support**: OpenAI, Ollama, DeepSeek, Moonshot, Zhipu AI, etc.
-- ✨ **7 Smart Text Operations**: Polish, translate, summarize, expand, condense, rewrite, continue
-- 🔧 **3 Custom Buttons**: Configure your own AI operations with custom prompts
+- 📜 **Operation History**: Complete record of text processing with version timeline and diff comparison, supports restoring snapshots to undo last operations
+- 🤖 **Multi-AI Provider Support**: OpenAI, Ollama, DeepSeek, Claude, etc.
+- ✨ **8 Smart Text Operations**: Polish, translate, summarize, expand, condense, rewrite, continue, and undo
+- 🔧 **5 Custom Buttons**: Configure your own AI operations with custom prompts
 - 📊 **Visual Diff Comparison**: Clearly shows modifications (deletions in red, additions in green)
-- 🎯 **Precise Text Replacement**: Accurate positioning, supports multiple identical characters
-- 🎨 **Smart Floating Toolbar**: Auto-appears on text selection, draggable and pinnable
+- 🎯 **Precise Text Replacement**: Full-block snapshot protection for reliable restoration
+- 🎨 **Smart Floating Toolbar**: Auto-appears on text selection, with one-click undo support
 - 🔒 **Privacy First**: API keys stored locally, supports Ollama local deployment
 
 ## Quick Start
@@ -59,38 +59,30 @@
 1. Install [Ollama](https://ollama.com)
 2. Pull a model:
    ```bash
-   ollama pull llama3.2
+   ollama pull qwen3.6
    # or
-   ollama pull qwen2.5
+   ollama pull deepseek-v4-flash
    ```
 3. Select Ollama provider in plugin settings
 4. Use default configuration (API: http://localhost:11434)
 
-**🌐 Free Cloud Models Recommended** (No local deployment needed, available as of Feb 14, 2026):
-- **GPT-OSS 120B** - OpenAI's open-source large model
-- **Qwen3 / Qwen3.5** - Latest version of Tongyi Qianwen
-  - 💡 **Qwen3.5:4b** — Excellent local deployment option via Ollama (⭐recommended, 4b for 6GB+ VRAM, 27b for 24GB+ VRAM)
-  - ⚠️ *Note: Qwen3.5 series has longer reasoning time, please be patient*
-- **GLM-5** - Zhipu AI's next-generation model
-- **Gemini 3 Flash** - Google's lightweight fast model
+**🌐 Cloud Models Recommended** (Latest July 2026):
+- **Daily use (polish/translate/chat)**: GPT-5.3 Instant, Claude Sonnet 5, GLM-4.7-Flash, Qwen3.5:4B
+- **Professional writing (complex reasoning)**: GPT-5.5 Thinking, Claude Opus 4.7, GLM-5.2, Qwen3.6
+- **Maximum performance (coding/tasks)**: GPT-5.5 Pro, Claude Sonnet 5, Kimi K3, DeepSeek V4-Pro
+- **Local deployment (privacy first)**: Ollama → Qwen3.6 27b(Preferred), DeepSeek V4-Flash (High-end), LLaMA4 series
 
-> 💡 These cloud models can be used via OpenAI API-compatible services. Please refer to each provider's documentation for specific configuration.
+> 💡 These cloud models can be used via OpenAI API-compatible services. Qwen3.5:4b is a balanced choice for local deployment.
 
 ### Other AI Providers
 
 Supported services:
-- **OpenAI** (GPT-5.2 Instant ⭐recommended / GPT-5.2 Thinking / GPT-5.2 Pro)
-- **Claude** (Claude Sonnet 4.5 ⭐recommended / Claude Opus 4.6)
-- **DeepSeek** (DeepSeek-V3.2 / DeepSeek-R1)
-- **Moonshot (Kimi)** (Kimi K2.5)
-- **Zhipu AI (Z.ai)** (GLM-4-Flash ⭐free tier / GLM-4.7 / GLM-5)
-- **Custom OpenAI-compatible API** (supports any OpenAI API format service)
-
-**💡 Model Selection Guide:**
-- **Daily use (polish/translate/chat)**: GPT-5.2 Instant, Claude Sonnet 4.5, GLM-4-Flash (free tier), Qwen3.5:4b
-- **Professional writing/complex reasoning**: GPT-5.2 Thinking, Claude Opus 4.6, GLM-5
-- **Maximum performance/coding**: GPT-5.2 Pro, Kimi K2.5
-- **Local deployment (privacy first)**: Qwen3.5:4b via Ollama — good quality with reasonable speed, longer reasoning time
+- **OpenAI** (GPT-5.5 Pro ⭐Recommended / GPT-5.5 Thinking / GPT-5.3 Instant)
+- **Claude** (Claude Sonnet 5 ⭐Recommended / Claude Opus 4.7)
+- **DeepSeek** (DeepSeek-V4-Pro / DeepSeek-V4-Flash)
+- **Moonshot (Kimi)** (Kimi K3 ⭐Recommended / Kimi K2.7-Code)
+- **Zhipu AI (Z.ai)** (GLM-4.7-Flash ⭐Free Tier / GLM-5.2)
+- **Custom OpenAI-compatible API** (supports almost all OpenAI API format services)
 
 Add corresponding API keys in plugin settings.
 
@@ -116,7 +108,7 @@ Customize which buttons appear in the floating toolbar:
 
 ### Custom Buttons Configuration
 
-Create up to 3 personalized AI operation buttons:
+Create up to 5 personalized AI operation buttons:
 
 1. Open plugin settings → **Custom Prompts** tab
 2. Enable and configure each custom button:
@@ -181,6 +173,11 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 
 ## 📝 Recent Updates
 
+### v0.1.21
+- ↩️ **New: Snapshot Rollback & Quick Undo** — Restore block content to pre-AI state via Global History with one-click undo button in toolbar and context menu
+- 🎛️ **Custom Buttons Expanded: 3→5** — Two new custom buttons (custom4, custom5) available for configuration
+- 🐛 Various bug fixes
+
 ### v0.1.19
 - 📤 **New: History Import/Export** — Backup and migrate operation history
 - Smart merge: newer version kept for duplicates, seamless user experience
@@ -189,24 +186,11 @@ Claude is supported through OpenAI API-compatible interface. Configuration:
 - 🔓 Lowered minimum version to 2.8.5 for broader SiYuan compatibility
 
 ### v0.1.18
-- 📜 **New: Operation History** — Complete record of text processing workflow
-- Save original and modified text for each AI operation (no truncation)
-- Support recording regenerate and model switch chains
-- Smart sampling: max 8 histories, 6 versions each (first 3 + last 3)
-- Read-only view: display diff between original and any version
-- 🌊 **New: Streaming Response** — Real-time AI content display with reasoning chain support
+- 📜 **New: Operation History** — Complete record of text processing workflow with diff comparison
+- 🌊 **New: Streaming Response** — Real-time character-by-character AI content display with reasoning chain support
 - 🎯 Optimized AI system prompts for better output format control
 - 🔧 Improved DiffViewer model dropdown scrolling experience
 - 🛡️ Enhanced error handling and edge case processing
-
-### v0.1.17
-- 💬 **New: Direct Chat Dialog** — Added standalone chat interface alongside existing quick action buttons
-- "💬 Chat" button positioned at the far right with visual separator for clear distinction
-- Supports real-time intelligent text modification through natural language instructions
-- Chat history tracking with persistent conversation storage
-- Smart input with customizable prompt suggestions
-- 🔗 Optimized connection stability and display performance
-- ⚡ Accelerated result display speed for smoother experience
 
 [View full changelog](https://github.com/DUZSSY/siyuan-ai-assistant/blob/main/CHANGELOG.md)
 

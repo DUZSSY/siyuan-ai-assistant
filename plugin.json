@@ -3,11 +3,24 @@
   "name": "siyuan-ai-assistant",
   "author": "DUZSSY",
   "url": "https://github.com/DUZSSY/siyuan-ai-assistant",
-  "version": "0.1.19",
+  "version": "0.1.21",
   "minAppVersion": "2.8.5",
   "disabledInPublish": false,
-  "backends": ["windows", "linux", "darwin", "docker", "android", "ios"],
-  "frontends": ["desktop", "browser-desktop", "desktop-window", "browser-mobile", "mobile"],
+  "backends": [
+    "windows",
+    "linux",
+    "darwin",
+    "docker",
+    "android",
+    "ios"
+  ],
+  "frontends": [
+    "desktop",
+    "browser-desktop",
+    "desktop-window",
+    "browser-mobile",
+    "mobile"
+  ],
   "displayName": {
     "default": "AI Assistant",
     "zh_CN": "AI助手"

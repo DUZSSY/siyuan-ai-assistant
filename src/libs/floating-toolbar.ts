@@ -4,12 +4,13 @@ import { blockService } from '../services/block';
 import type { AIOperationType, AIProvider } from '../types';
 
 export interface FloatingToolbarOptions {
-    onOperation: (type: AIOperationType, originalText: string, modifiedText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
-    onOperationStart: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
-    onCustomInput?: (selectedText: string, originalText: string, blockId: string | null, selectionStart: number, selectionEnd: number) => void;
-    onOpenSettings: () => void;
-    onModelChange?: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
-    i18n?: Record<string, any>;
+  onOperation: (type: AIOperationType, originalText: string, modifiedText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
+  onOperationStart: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
+  onCustomInput?: (selectedText: string, originalText: string, blockId: string | null, selectionStart: number, selectionEnd: number) => void;
+  onOpenSettings: () => void;
+  onModelChange?: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
+  onUndo?: () => Promise<boolean>;
+  i18n?: Record<string, any>;
 }
 
 export class FloatingToolbar {
@@ -425,16 +426,16 @@ export class FloatingToolbar {
         if (buttonsContainer) {
             buttonsContainer.innerHTML = '';
 
-            // 1. 渲染7个默认操作按钮
-            const defaultActions = [
-                { type: 'polish', label: this.i18n.operations?.polish || '润色', icon: '✨', enabled: buttons.polish },
-                { type: 'translate', label: this.i18n.operations?.translate || '翻译', icon: '🌐', enabled: buttons.translate },
-                { type: 'summarize', label: this.i18n.operations?.summarize || '总结', icon: '📝', enabled: buttons.summarize },
-                { type: 'expand', label: this.i18n.operations?.expand || '扩写', icon: '📖', enabled: buttons.expand },
-                { type: 'condense', label: this.i18n.operations?.condense || '精简', icon: '📄', enabled: buttons.condense },
-                { type: 'rewrite', label: this.i18n.operations?.rewrite || '改写', icon: '🔄', enabled: buttons.rewrite },
-                { type: 'continue', label: this.i18n.operations?.continue || '续写', icon: '➡️', enabled: buttons.continue }
-            ];
+    // 1. 渲染7个默认操作按钮
+      const defaultActions = [
+        { type: 'polish', label: this.i18n.operations?.polish || '润色', icon: '✨', enabled: buttons.polish },
+        { type: 'translate', label: this.i18n.operations?.translate || '翻译', icon: '🌐', enabled: buttons.translate },
+        { type: 'summarize', label: this.i18n.operations?.summarize || '总结', icon: '📝', enabled: buttons.summarize },
+        { type: 'expand', label: this.i18n.operations?.expand || '扩写', icon: '📖', enabled: buttons.expand },
+        { type: 'condense', label: this.i18n.operations?.condense || '精简', icon: '📄', enabled: buttons.condense },
+        { type: 'rewrite', label: this.i18n.operations?.rewrite || '改写', icon: '🔄', enabled: buttons.rewrite },
+        { type: 'continue', label: this.i18n.operations?.continue || '续写', icon: '➡️', enabled: buttons.continue }
+      ];
 
             defaultActions.forEach((action: { type: string; label: string; icon: string; enabled: boolean }) => {
                 if (action.enabled) {
@@ -699,16 +700,24 @@ export class FloatingToolbar {
         const providerInfo = provider
             ? `${provider.name} : ${provider.model}`
             : `⚠️ ${this.i18n.messages?.noProvider || '未配置'}`;
-            
+
+        // 检查撤销按钮是否启用
+        const settings = settingsService.getSettings();
+        const undoButtonHtml = settings.toolbarButtons.undoLast !== false
+            ? `<button class="btn-undo" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px;" title="${this.i18n.history?.undoLastApplied || '撤销上一次操作'}">↩️</button>`
+            : '';
+
         const header = document.createElement('div');
         header.className = 'toolbar-header';
         header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--b3-border-color, #e0e0e0); cursor: move;';
         header.innerHTML = `
             <span class="drag-handle" style="cursor: move; padding: 2px 4px; margin-right: 4px; color: var(--b3-theme-on-surface, #999);">⋮⋮</span>
             <span class="provider-name" style="cursor: pointer; font-weight: 500; font-size: 12px; color: var(--b3-theme-on-surface, #666); flex: 1;" title="${this.i18n.toolbar?.switchModel || '点击切换模型'}">${providerInfo}</span>
-            <button class="btn-pin" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-right: 4px; opacity: 0.6;" title="${this.i18n.toolbar?.pin || '固定位置'}">📌</button>
-            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 6px;" title="${this.i18n.settings?.title || '设置'}">⚙️</button>
-            <button class="btn-close" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 6px; margin-left: 4px; color: var(--b3-theme-on-surface, #999);" title="${this.i18n.close || '关闭'}">✕</button>
+            <button class="btn-pin" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 4px; opacity: 0.6;" title="${this.i18n.toolbar?.pin || '固定位置'}">📌</button>
+            <button class="btn-donate" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px;" title="打赏支持">❤️</button>
+            ${undoButtonHtml}
+            <button class="btn-settings" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px;" title="${this.i18n.settings?.title || '设置'}">⚙️</button>
+            <button class="btn-close" style="background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 4px; margin-left: 2px; color: var(--b3-theme-on-surface, #999);" title="${this.i18n.close || '关闭'}">✕</button>
         `;
         
         // 拖拽功能
@@ -781,6 +790,15 @@ export class FloatingToolbar {
             this.forceHide();
         });
         
+        // 撤销操作按钮
+        header.querySelector('.btn-undo')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (this.options.onUndo) {
+                await this.options.onUndo();
+            }
+            this.hide();
+        });
+        
         // 打赏按钮
         header.querySelector('.btn-donate')?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -845,67 +863,76 @@ export class FloatingToolbar {
         });
     }
 
-    private async handleOperation(type: AIOperationType): Promise<void> {
-        if (!this.currentSelection) return;
-
-        // 记录当前操作类型，用于模型切换时重新执行
-        this.currentOperationType = type;
-
-        // 确保 AI 提供商已配置
-        if (!aiService.isConfigured()) {
-            const currentProvider = settingsService.getCurrentProvider();
-            if (currentProvider) {
-                aiService.setProvider(currentProvider);
-            } else {
-                alert(this.i18n.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
-                this.options.onOpenSettings();
-                return;
-            }
-        }
-
-        // 获取完整块内容用于差异显示和精确替换
-        let blockContent = '';
-        if (this.currentBlockId) {
-            const fullBlockContent = await blockService.getBlockContent(this.currentBlockId);
-            // 思源笔记 API 返回的内容通常在 markdown 字段中
-            blockContent = fullBlockContent?.markdown || fullBlockContent?.content || '';
-        }
-
-        // 如果无法获取完整块内容，从DOM获取
-        if (!blockContent) {
-            blockContent = this.getFullBlockContentFromDOM();
-        }
-
-        // 最终回退方案：使用选中的文字
-        if (!blockContent) {
-            blockContent = this.currentSelection;
-        }
-
-        // 处理自定义输入类型的特殊逻辑
-        if (type === 'customInput') {
-            if (this.options.onCustomInput) {
-                this.options.onCustomInput(
-                    this.currentSelection,
-                    blockContent,
-                    this.currentBlockId,
-                    this.currentSelectionStart,
-                    this.currentSelectionEnd
-                );
-            }
-            this.hide();
-            return;
-        }
-
-        await Promise.resolve(this.options.onOperationStart(
-            type, 
-            blockContent, 
-            this.currentBlockId || undefined,
-            this.currentSelection,
-            this.currentSelectionStart,
-            this.currentSelectionEnd
-        ));
-        this.hide();
+  private async handleOperation(type: AIOperationType): Promise<void> {
+    // 处理撤销操作（不需要选中文本）
+    if (type === 'undoLast') {
+      if (this.options.onUndo) {
+        await this.options.onUndo();
+      }
+      this.hide();
+      return;
     }
+
+    if (!this.currentSelection) return;
+
+    // 记录当前操作类型，用于模型切换时重新执行
+    this.currentOperationType = type;
+
+    // 确保 AI 提供商已配置
+    if (!aiService.isConfigured()) {
+      const currentProvider = settingsService.getCurrentProvider();
+      if (currentProvider) {
+        aiService.setProvider(currentProvider);
+      } else {
+        alert(this.i18n.messages?.noProvider || 'AI 提供商未配置，请先点击设置进行配置');
+        this.options.onOpenSettings();
+        return;
+      }
+    }
+
+    // 获取完整块内容用于差异显示和精确替换
+    let blockContent = '';
+    if (this.currentBlockId) {
+      const fullBlockContent = await blockService.getBlockContent(this.currentBlockId);
+      // 思源笔记 API 返回的内容通常在 markdown 字段中
+      blockContent = fullBlockContent?.markdown || fullBlockContent?.content || '';
+    }
+
+    // 如果无法获取完整块内容，从DOM获取
+    if (!blockContent) {
+      blockContent = this.getFullBlockContentFromDOM();
+    }
+
+    // 最终回退方案：使用选中的文字
+    if (!blockContent) {
+      blockContent = this.currentSelection;
+    }
+
+    // 处理自定义输入类型的特殊逻辑
+    if (type === 'customInput') {
+      if (this.options.onCustomInput) {
+        this.options.onCustomInput(
+          this.currentSelection,
+          blockContent,
+          this.currentBlockId,
+          this.currentSelectionStart,
+          this.currentSelectionEnd
+        );
+      }
+      this.hide();
+      return;
+    }
+
+    await Promise.resolve(this.options.onOperationStart(
+      type,
+      blockContent,
+      this.currentBlockId || undefined,
+      this.currentSelection,
+      this.currentSelectionStart,
+      this.currentSelectionEnd
+    ));
+    this.hide();
+  }
 
     /**
      * 从DOM获取包含选中文字的块的完整内容

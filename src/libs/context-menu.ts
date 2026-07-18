@@ -94,7 +94,7 @@ export class ContextMenuManager {
             }
         });
         
-        // 3 个自定义按钮
+        // 5 个自定义按钮
         settings.customButtons.forEach((btn: any, index: number) => {
             if (btn.enabled) {
                 const customKey = `custom${index + 1}` as keyof typeof settings.toolbarButtons;
@@ -128,6 +128,20 @@ export class ContextMenuManager {
                 type: 'separator'
             });
         }
+        
+        // 在设置选项前统一加入一条分割线（如果没有的话），并添加撤销按钮
+        // 注意前面的对话可能已经添加了一条分隔线，避免重复，我们只在没有开启对话时补充分隔线
+        if (settings.toolbarButtons.customInput === false) {
+            aiSubmenu.push({
+                type: 'separator'
+            });
+        }
+        
+        // 撤销上一次操作（固定选项）
+        aiSubmenu.push({
+            label: `↩️ ${this.i18n.history?.undoLastApplied || '撤销上一次操作'}`,
+            click: () => this.options.onOperation('undoLast', blockId!, blockContent)
+        });
         
         // 添加设置选项
         aiSubmenu.push({
