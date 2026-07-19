@@ -5,7 +5,7 @@ import type { AIOperationType, AIProvider } from '../types';
 
 export interface FloatingToolbarOptions {
   onOperation: (type: AIOperationType, originalText: string, modifiedText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
-  onOperationStart: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
+  onOperationStart: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number, blockType?: string) => void;
   onCustomInput?: (selectedText: string, originalText: string, blockId: string | null, selectionStart: number, selectionEnd: number) => void;
   onOpenSettings: () => void;
   onModelChange?: (type: AIOperationType, originalText: string, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number) => void;
@@ -892,10 +892,21 @@ export class FloatingToolbar {
 
     // 获取完整块内容用于差异显示和精确替换
     let blockContent = '';
+    let blockType = '';
     if (this.currentBlockId) {
       const fullBlockContent = await blockService.getBlockContent(this.currentBlockId);
-      // 思源笔记 API 返回的内容通常在 markdown 字段中
-      blockContent = fullBlockContent?.markdown || fullBlockContent?.content || '';
+      blockType = fullBlockContent?.type || '';
+      // 优先使用 markdown 字段
+      blockContent = fullBlockContent?.markdown || '';
+      // 如果 markdown 不可用，但块类型是标题，则从 content 和 type 构造
+      if (!blockContent && blockType.startsWith('h')) {
+        const level = blockType.substring(1);
+        blockContent = '#'.repeat(parseInt(level)) + ' ' + (fullBlockContent.content || '');
+      }
+      // 兜底：使用 content 字段
+      if (!blockContent) {
+        blockContent = fullBlockContent?.content || '';
+      }
     }
 
     // 如果无法获取完整块内容，从DOM获取
@@ -929,7 +940,8 @@ export class FloatingToolbar {
       this.currentBlockId || undefined,
       this.currentSelection,
       this.currentSelectionStart,
-      this.currentSelectionEnd
+      this.currentSelectionEnd,
+      blockType
     ));
     this.hide();
   }
@@ -953,8 +965,11 @@ export class FloatingToolbar {
             : container.parentElement;
 
         while (element) {
-            // 检查是否是思源笔记的块
-            if (element.classList && element.classList.contains('p')) {
+            // 检查是否是思源笔记的块（支持所有块类型）
+            const blockClasses = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote', 'code-block', 'table', 'div'];
+            const isBlock = element.classList && blockClasses.some(cls => element.classList.contains(cls));
+            
+            if (isBlock) {
                 // 获取块内的所有文本内容
                 const blockText = element.textContent || '';
                 return blockText;

@@ -285,7 +285,7 @@ export class BlockService {
                 return { success: false, error: '无法获取块内容' };
             }
 
-            let fullContent = blockInfo.content;
+            let fullContent = blockInfo.markdown || blockInfo.content;
             
             if (!selectedText) {
                 return { success: false, error: '选中文字为空，无法执行精确替换' };
@@ -345,6 +345,8 @@ export class BlockService {
                 return { success: false, error: '无法获取块内容' };
             }
 
+            const fullContent = blockInfo.markdown || blockInfo.content;
+
             const selection = window.getSelection();
             if (!selection || selection.rangeCount === 0) {
                 return { success: false, error: '无有效选区，无法执行精确替换' };
@@ -371,7 +373,7 @@ export class BlockService {
             let bestIndex = -1;
 
             for (const pattern of matchPatterns) {
-                const index = blockInfo.content.indexOf(pattern);
+                const index = fullContent.indexOf(pattern);
                 if (index !== -1) {
                     bestMatch = pattern;
                     bestIndex = index;
@@ -381,8 +383,8 @@ export class BlockService {
 
             if (bestIndex !== -1) {
                 // 找到了匹配，进行精确替换
-                const before = blockInfo.content.substring(0, bestIndex);
-                const after = blockInfo.content.substring(bestIndex + bestMatch.length);
+                const before = fullContent.substring(0, bestIndex);
+                const after = fullContent.substring(bestIndex + bestMatch.length);
                 const newContent = before + newText + after;
                 return { success: true, content: newContent };
             }

@@ -40,6 +40,7 @@ export default class AIAssistantPlugin extends Plugin {
     private currentSelectionEnd: number = -1;  // 选中文字在原文中的结束索引
     private displayTextForDiff: string = '';  // 用于Diff窗口显示的原文（选中文字或整个块）
     private isFullBlockReplace: boolean = false;  // 标记是否为整块替换（右键菜单场景）
+    private currentBlockType: string = '';  // 当前块的类型（如 h1, h2, p 等），用于 updateBlock 时保留格式
     private currentOperation: AIOperationType = 'polish';  // 当前操作类型，用于模型切换时重新处理
     private currentHistoryId: string | null = null;  // 当前历史记录ID
     private currentDiffSessionId: number = 0; // 当前Diff会话ID（防止旧异步结果覆盖新会话）
@@ -215,7 +216,7 @@ export default class AIAssistantPlugin extends Plugin {
         // 操作完成后隐藏浮动工具栏
         this.floatingToolbar?.forceHide();
       },
-      onOperationStart: async (type, original, blockId, selectedText, selectionStart, selectionEnd) => {
+      onOperationStart: async (type, original, blockId, selectedText, selectionStart, selectionEnd, blockType) => {
         // 处理撤销操作
         if (type === 'undoLast') {
           await this.handleUndoLastOperation(blockId);
@@ -239,7 +240,7 @@ export default class AIAssistantPlugin extends Plugin {
         this.currentInitialOriginalText = selectedText || original;
 
                 // 1. 显示加载中
-                this.showDiffViewer(original, '⏳ ' + (this.i18n.history.processing), type, blockId, selectedText, selectionStart, selectionEnd);
+this.showDiffViewer(original, '⏳ ' + (this.i18n.history.processing), type, blockId, selectedText, selectionStart, selectionEnd, false, blockType);
                 const sessionId = this.currentDiffSessionId;
                 // 开始操作时隐藏浮动工具栏
                 this.floatingToolbar?.forceHide();
@@ -645,7 +646,7 @@ export default class AIAssistantPlugin extends Plugin {
                     }
                     
                     // 先显示 Diff 窗口，显示"正在处理"状态
-                    this.showDiffViewer(blockContent, '⏳ ' + (this.i18n.history.processing), type, blockId, '', -1, -1, true);
+                    this.showDiffViewer(blockContent, '⏳ ' + (this.i18n.history.processing), type, blockId, '', -1, -1, true, blockInfo?.type);
                     const sessionId = this.currentDiffSessionId;
 
                     // 固定会话上下文
@@ -1042,7 +1043,7 @@ const isDirty = history.appliedFullBlockText && bestCurrentText !== history.appl
         });
     }
 
-    private showDiffViewer(original: string, modified: string, operation: AIOperationType, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number, isFullBlock: boolean = false) {
+    private showDiffViewer(original: string, modified: string, operation: AIOperationType, blockId?: string, selectedText?: string, selectionStart?: number, selectionEnd?: number, isFullBlock: boolean = false, blockType?: string) {
         if (this.diffDialog) {
             this.diffDialog.destroy();
             this.diffDialog = null;
@@ -1056,6 +1057,7 @@ const isDirty = history.appliedFullBlockText && bestCurrentText !== history.appl
         this.currentSelectionStart = selectionStart ?? -1;
         this.currentSelectionEnd = selectionEnd ?? -1;
         this.isFullBlockReplace = isFullBlock; // 标记是否为整块替换
+        this.currentBlockType = blockType || ''; // 保存块类型，用于 updateBlock 时保留格式
         this.currentOperation = operation; // 保存操作类型，用于模型切换时重新处理
         this.currentDiffSessionId += 1;
         const sessionId = this.currentDiffSessionId;
@@ -1107,7 +1109,13 @@ const isDirty = history.appliedFullBlockText && bestCurrentText !== history.appl
                 
 // 右键菜单场景：整块替换，直接使用 AI 结果作为新内容
           if (this.isFullBlockReplace) {
-            newContent = result;
+            // 恢复块类型标记（如标题的 ## 前缀），避免格式化丢失
+            const headingMatch = this.currentOriginalText.match(/^(#{1,6})\s/);
+            if (headingMatch) {
+              newContent = headingMatch[0] + result;
+            } else {
+              newContent = result;
+            }
             // 将多段内容转换为假换行（单换行），避免触发思源重建索引
             newContent = newContent.replace(/\n\n+/g, '\n');
                 } else {
