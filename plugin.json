@@ -1,5 +1,4 @@
 {
-  "$schema": "https://docs.siyuan-note.club/schemas/manifest/plugin.schema.json",
   "name": "siyuan-ai-assistant",
   "author": "DUZSSY",
   "url": "https://github.com/DUZSSY/siyuan-ai-assistant",
@@ -55,9 +54,5 @@
     "block-level",
     "智能助手",
     "文本编辑"
-  ],
-  "i18n": [
-    "en_US",
-    "zh_CN"
   ]
 }
